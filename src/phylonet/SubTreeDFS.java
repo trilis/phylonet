@@ -30,6 +30,7 @@ public class SubTreeDFS extends DFS {
 	
 	@Override
 	public void enter(Node v) {
+		v.numberOfVisits++;
 		if (!flag) {
 			Iterator<Edge> iterator = v.getOutEdges();
 			while (iterator.hasNext()) {

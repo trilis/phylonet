@@ -9,6 +9,7 @@ public class Node {
 	private HashSet<Edge> outEdges = new HashSet<Edge>();
 	private Graph graph;
 	private Taxon taxon;
+	public int numberOfVisits = 0;
 	
 	public Node copy(Graph newGraph) {
 		Node n = new Node();

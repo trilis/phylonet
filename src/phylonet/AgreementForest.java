@@ -49,6 +49,11 @@ public class AgreementForest {
 				throw new IllegalArgumentException("Partition is illegal");
 			}
 		}
+		for (Node n : tree1.nodes) {
+			if (n.numberOfVisits > 1) {
+				throw new IllegalArgumentException("Partition is not node disjoint");
+			}
+		}
 		dfs.dfs(tree1.getRoot());
 		dfs.dfs(tree2.getRoot());
 		graph = dfs.getAG();
