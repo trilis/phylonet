@@ -1,18 +1,31 @@
 package phylonet;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Vector;
 
 public class Graph {
 
 	protected HashSet<Node> nodes = new HashSet<Node>();
 	
-	public Graph copy() {
-		Graph gr = new Graph();
-		for (Node n : nodes) {
-			gr.nodes.add(n.copy(gr));
+	public Graph() {
+		
+	}
+	
+	public Graph(Graph old) {
+		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
+		for (Node n : old.nodes) {
+			Node nw = new Node();
+			nwnodes.put(n, nw);
+			addNode(nw);
 		}
-		return gr;
+		for (Node n : old.nodes) {
+			Iterator<Edge> itr = n.getOutEdges();
+			while (itr.hasNext()) {
+				addEdge(nwnodes.get(n), nwnodes.get(itr.next().getFinish()));
+			}
+		}
 	}
 	
 	public void addNode(Node node) {
@@ -25,7 +38,7 @@ public class Graph {
 		}
 		Iterator<Edge> inEdges = node.getInEdges();
 		Iterator<Edge> outEdges = node.getOutEdges();
-		HashSet<Edge> toRemove = new HashSet<Edge>();
+		Vector<Edge> toRemove = new Vector<Edge>();
 		while (inEdges.hasNext()) {
 			Edge e = inEdges.next();
 			e.getStart().delOutEdge(e);
@@ -62,6 +75,36 @@ public class Graph {
 	
 	public boolean hasNode(Node node) {
 		return nodes.contains(node);
+	}
+	
+	public boolean isTree() {
+		CheckTreeDFS dfs = new CheckTreeDFS();
+		for (Node n : nodes) {
+			if (!dfs.isUsed(n)) {
+				dfs.dfs(n);
+			}
+		}
+		return dfs.isTree;
+	}
+	
+	public boolean hasEdge(Node start, Node finish) {
+		Iterator<Edge> itr = start.getOutEdges();
+		while (itr.hasNext()) {
+			if (itr.next().getFinish().equals(finish)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public Vector<Node> getNodesWithNoIncoming() {
+		Vector<Node> answer = new Vector<Node>();
+		for (Node n : nodes) {
+			if (n.getInDeg() == 0) {
+				answer.add(n);
+			}
+		}
+		return answer;
 	}
 	
 }

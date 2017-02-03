@@ -1,12 +1,12 @@
 package phylonet;
 
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Vector;
 
 public class Node {
 	
-	private Vector<Edge> inEdges = new Vector<Edge>();
-	private Vector<Edge> outEdges = new Vector<Edge>();
+	private HashSet<Edge> inEdges = new HashSet<Edge>();
+	private HashSet<Edge> outEdges = new HashSet<Edge>();
 	private Graph graph;
 	private Taxon taxon;
 	
@@ -15,20 +15,20 @@ public class Node {
 		n.taxon = taxon;
 		n.graph = newGraph;
 		for (Edge e : inEdges) {
-			n.inEdges.addElement(new Edge(newGraph, e.getStart(), n));
+			n.inEdges.add(new Edge(newGraph, e.getStart(), n));
 		}
 		for (Edge e : outEdges) {
-			n.outEdges.addElement(new Edge(newGraph, n, e.getFinish()));
+			n.outEdges.add(new Edge(newGraph, n, e.getFinish()));
 		}
 		return n;
 	}
 	
 	public void addInEdge(Edge edge) {
-		inEdges.addElement(edge);
+		inEdges.add(edge);
 	}
 	
 	public void addOutEdge(Edge edge) {
-		outEdges.addElement(edge);
+		outEdges.add(edge);
 	}
 	
 	public void delInEdge(Edge edge) {

@@ -1,23 +1,39 @@
 package phylonet;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
 
 public class PhyloTree extends Graph {
 
-	private Node root;
+	private Node root, oldRoot;
 	
-	public PhyloTree() {
-		
-	}
-
 	public PhyloTree(Graph gr) {
 		this.nodes = gr.nodes;
 	}
 	
+	public PhyloTree(PhyloTree old) {
+		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
+		for (Node n : old.nodes) {
+			Node nw = new Node();
+			nwnodes.put(n, nw);
+			addNode(nw);
+		}
+		for (Node n : old.nodes) {
+			Iterator<Edge> itr = n.getOutEdges();
+			while (itr.hasNext()) {
+				addEdge(nwnodes.get(n), nwnodes.get(itr.next().getFinish()));
+			}
+		}
+	}
+	
 	public void setRoot(Node root) {
 		this.root = root;
+	}
+	
+	public Node getRoot() {
+		return root;
 	}
 	
 	public void compress() {
@@ -42,7 +58,26 @@ public class PhyloTree extends Graph {
 	public PhyloTree buildSubGraph(HashSet<Taxon> taxa) {
 		SubTreeDFS dfs = new SubTreeDFS(taxa, this);
 		dfs.dfs(root);
-		dfs.ans.compress();
-		return dfs.ans;
+		oldRoot = dfs.getOldRoot();
+		PhyloTree subGraph = dfs.getAnswer();
+		subGraph.compress();
+		return subGraph;
 	}
+	
+	public Node getParent(Node v) {
+		Iterator<Edge> itr = v.getInEdges();
+		return itr.next().getStart();
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		PhyloTree tree = (PhyloTree) o;
+		IsomorphismChecker checker = new IsomorphismChecker();
+		return checker.areBinaryTreesIsomorphic(root, tree.getRoot());
+	}
+	
+	public Node getOldRoot() {
+		return oldRoot;
+	}
+
 }

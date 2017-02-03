@@ -6,23 +6,19 @@ import java.util.Iterator;
 
 public class SubTreeDFS extends DFS {
 
-	HashSet<Taxon> taxa;
-	HashSet<Node> parents;
-	HashMap<Node, Node> nwnodes;
-	PhyloTree tree;
-	PhyloTree ans = new PhyloTree();
+	private HashSet<Node> parents;
+	private HashMap<Node, Node> nwnodes;
+	private PhyloTree ans;
 	boolean flag = false;
+	private Node oldRoot;
 	
 	public SubTreeDFS(HashSet<Taxon> taxa, PhyloTree tree) {
-		this.taxa = taxa;
-		this.tree = tree;
 		for (Node n : tree.nodes) {
 			if (n.isLeaf() && taxa.contains(n.getTaxon())) {
 				Node v = n;
 				parents.add(v);
 				while (v.getInDeg() > 0) {
-					Iterator<Edge> itr = v.getInEdges();
-					v = itr.next().getStart();
+					v = tree.getParent(v);
 					parents.add(v);
 				}
 			}
@@ -44,6 +40,7 @@ public class SubTreeDFS extends DFS {
 			}
 			if (!iterator.hasNext()) {
 				flag = true;
+				oldRoot = v;
 			}
 		}
 		if (flag && parents.contains(v)) {
@@ -60,6 +57,14 @@ public class SubTreeDFS extends DFS {
 				ans.addEdge(nwnodes.get(u), nwnodes.get(v));
 			}
 		}
+	}
+	
+	public Node getOldRoot() {
+		return oldRoot;
+	}
+	
+	public PhyloTree getAnswer() {
+		return ans;
 	}
 
 }

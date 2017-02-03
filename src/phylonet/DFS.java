@@ -22,5 +22,9 @@ public abstract class DFS {
 		}
 		exit(v);
 	}
+	
+	public boolean isUsed(Node v) {
+		return used.contains(v);
+	}
 
 }
