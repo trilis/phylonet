@@ -6,8 +6,8 @@ import java.util.Vector;
 
 public class AllAgreementForests {
 	
-	Vector<Vector<HashSet<Taxon>>> allPartitions;
-	Vector<AgreementForest> allAgreementForests;
+	Vector<Vector<HashSet<Taxon>>> allPartitions = new Vector<Vector<HashSet<Taxon>>>();
+	Vector<AgreementForest> allAgreementForests = new Vector<AgreementForest>();
 	
 	public AllAgreementForests(PhyloTree tree1, PhyloTree tree2, HashSet<Taxon> taxa) {
 		countAllPartitions(taxa, new Vector<HashSet<Taxon>>());

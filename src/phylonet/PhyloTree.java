@@ -9,6 +9,10 @@ public class PhyloTree extends Graph {
 
 	private Node root, oldRoot;
 	
+	public PhyloTree() {
+		
+	}
+	
 	public PhyloTree(Graph gr) {
 		this.nodes = gr.nodes;
 	}
@@ -16,7 +20,7 @@ public class PhyloTree extends Graph {
 	public PhyloTree(PhyloTree old) {
 		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
 		for (Node n : old.nodes) {
-			Node nw = new Node();
+			Node nw = new Node(this, n.getTaxon());
 			nwnodes.put(n, nw);
 			addNode(nw);
 		}
@@ -69,9 +73,7 @@ public class PhyloTree extends Graph {
 		return itr.next().getStart();
 	}
 	
-	@Override
-	public boolean equals(Object o) {
-		PhyloTree tree = (PhyloTree) o;
+	public boolean isIsomorphicTo(PhyloTree tree) {
 		IsomorphismChecker checker = new IsomorphismChecker();
 		return checker.areBinaryTreesIsomorphic(root, tree.getRoot());
 	}

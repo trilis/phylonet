@@ -11,8 +11,13 @@ public class Node {
 	private Taxon taxon;
 	public int numberOfVisits = 0;
 	
+	public Node(Graph graph, Taxon taxon) {
+		this.graph = graph;
+		this.taxon = taxon;
+	}
+	
 	public Node copy(Graph newGraph) {
-		Node n = new Node();
+		Node n = new Node(newGraph, taxon);
 		n.taxon = taxon;
 		n.graph = newGraph;
 		for (Edge e : inEdges) {

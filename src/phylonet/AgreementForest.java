@@ -7,9 +7,11 @@ import java.util.Vector;
 
 public class AgreementForest {
 
-	private Vector<PhyloTree> trees, trees2, treesInOrder;
-	private HashMap<Node, PhyloTree> components;
-	private Graph graph;
+	private Vector<PhyloTree> trees = new Vector<PhyloTree>();
+	private Vector<PhyloTree> trees2 = new Vector<PhyloTree>();
+	private Vector<PhyloTree> treesInOrder = new Vector<PhyloTree>();
+	private HashMap<Node, PhyloTree> components = new HashMap<Node, PhyloTree>();
+	private Graph graph = new Graph();
 	
 	public AgreementForest (AgreementForest old) {
 		HashMap<PhyloTree, PhyloTree> newtrees = new HashMap<PhyloTree, PhyloTree>();
@@ -22,8 +24,11 @@ public class AgreementForest {
 		for (PhyloTree tree2 : old.trees2) {
 			trees2.add(new PhyloTree(tree2));
 		}
+		for (PhyloTree tree : old.treesInOrder) {
+			treesInOrder.add(newtrees.get(tree));
+		}
 		for (Node n : old.components.keySet()) {
-			Node nw = new Node();
+			Node nw = new Node(graph, n.getTaxon());
 			newnodes.put(n, nw);
 			components.put(nw, newtrees.get(components.get(n)));
 			graph.addNode(nw);
@@ -41,7 +46,7 @@ public class AgreementForest {
 		for (HashSet<Taxon> taxa : partition) {
 			PhyloTree t1 = tree1.buildSubGraph(taxa);
 			PhyloTree t2 = tree2.buildSubGraph(taxa);
-			if (t1.equals(t2)) {
+			if (t1.isIsomorphicTo(t2)) {
 				dfs.putNodes(t1.getOldRoot(), t2.getOldRoot(), t1);
 				trees.add(t1);
 				trees2.add(t2);

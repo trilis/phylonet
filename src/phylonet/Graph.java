@@ -16,7 +16,7 @@ public class Graph {
 	public Graph(Graph old) {
 		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
 		for (Node n : old.nodes) {
-			Node nw = new Node();
+			Node nw = new Node(this, n.getTaxon());
 			nwnodes.put(n, nw);
 			addNode(nw);
 		}
@@ -29,6 +29,9 @@ public class Graph {
 	}
 	
 	public void addNode(Node node) {
+		if (!node.getGraph().equals(this)) {
+			throw new RuntimeException("Node from other graph");
+		}
 		nodes.add(node);
 	}
 	
@@ -60,6 +63,9 @@ public class Graph {
 	}
 	
 	public void addEdge(Node start, Node finish) {
+		if (!start.getGraph().equals(this) || !finish.getGraph().equals(this)) {
+			throw new RuntimeException("Node from other graph");
+		}
 		Edge edge = new Edge(this, start, finish);
 		start.addOutEdge(edge);
 		finish.addInEdge(edge);
@@ -88,6 +94,9 @@ public class Graph {
 	}
 	
 	public boolean hasEdge(Node start, Node finish) {
+		if (!start.getGraph().equals(this) || !finish.getGraph().equals(this)) {
+			throw new RuntimeException("Node from other graph");
+		}
 		Iterator<Edge> itr = start.getOutEdges();
 		while (itr.hasNext()) {
 			if (itr.next().getFinish().equals(finish)) {

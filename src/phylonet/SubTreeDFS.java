@@ -6,9 +6,9 @@ import java.util.Iterator;
 
 public class SubTreeDFS extends DFS {
 
-	private HashSet<Node> parents;
-	private HashMap<Node, Node> nwnodes;
-	private PhyloTree ans;
+	private HashSet<Node> parents = new HashSet<Node>();
+	private HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
+	private PhyloTree ans = new PhyloTree();
 	boolean flag = false;
 	private Node oldRoot;
 	
@@ -24,13 +24,12 @@ public class SubTreeDFS extends DFS {
 			}
 		}
 		for (Node n : parents) {
-			nwnodes.put(n, n.copy(ans));
+			nwnodes.put(n, new Node(ans, n.getTaxon()));
 		}
 	}
 	
 	@Override
 	public void enter(Node v) {
-		v.numberOfVisits++;
 		if (!flag) {
 			Iterator<Edge> iterator = v.getOutEdges();
 			while (iterator.hasNext()) {
@@ -45,6 +44,7 @@ public class SubTreeDFS extends DFS {
 			}
 		}
 		if (flag && parents.contains(v)) {
+			v.numberOfVisits++;
 			ans.addNode(nwnodes.get(v));
 		}
 	}

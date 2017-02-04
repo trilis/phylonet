@@ -6,7 +6,7 @@ import java.util.Iterator;
 public class CheckTreeDFS extends DFS {
 
 	public boolean isTree = true;
-	private HashSet<Node> black, gray;
+	private HashSet<Node> black, gray = new HashSet<Node>();
 	
 	@Override
 	public void enter(Node v) {

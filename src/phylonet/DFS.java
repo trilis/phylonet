@@ -8,7 +8,7 @@ public abstract class DFS {
 	public abstract void enter(Node v);
 	public abstract void exit(Node v);
 	
-	private HashSet<Node> used;
+	private HashSet<Node> used = new HashSet<Node>();
 	
 	public void dfs(Node v) {
 		used.add(v);
