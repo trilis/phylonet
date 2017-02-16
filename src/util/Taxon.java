@@ -1,11 +1,16 @@
-package phylonet;
+package util;
 
 public class Taxon {
 
-	String name;
+	public final String name;
 	
 	public Taxon(String name) {
 		this.name = name;
+	}
+	
+	@Override
+	public int hashCode() {
+		return name.hashCode();
 	}
 	
 	@Override
@@ -13,4 +18,8 @@ public class Taxon {
 		return name.equals(((Taxon)o).name);
 	}
 
+	@Override
+	public String toString() {
+		return name;
+	}
 }

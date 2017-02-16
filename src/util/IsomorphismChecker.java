@@ -1,4 +1,4 @@
-package phylonet;
+package util;
 
 import java.util.Iterator;
 
@@ -17,23 +17,19 @@ public class IsomorphismChecker {
 		if (root1.getOutDeg() != root2.getOutDeg()) {
 			return false;
 		}
-		Iterator<Edge> itr1 = root1.getOutEdges();
-		Iterator<Edge> itr2 = root2.getOutEdges();
+		Iterator<Edge> itr1 = root1.getOutEdges().iterator();
+		Iterator<Edge> itr2 = root2.getOutEdges().iterator();
 		Edge e1Left = itr1.next();
 		Edge e2Left = itr2.next();
 		if (itr1.hasNext()) {
 			Edge e1Right = itr1.next();
 			Edge e2Right = itr2.next();
-			if (areBinaryTreesIsomorphic(e1Left.getFinish(), e2Right.getFinish())
-					|| areBinaryTreesIsomorphic(e1Right.getFinish(), e2Right.getFinish())
-					|| areBinaryTreesIsomorphic(e1Right.getFinish(), e2Left.getFinish())) {
-				return true;
-			}
+			return (areBinaryTreesIsomorphic(e1Left.getFinish(), e2Right.getFinish())
+					&& areBinaryTreesIsomorphic(e1Right.getFinish(), e2Left.getFinish()))
+					|| (areBinaryTreesIsomorphic(e1Right.getFinish(), e2Right.getFinish()) &&
+							areBinaryTreesIsomorphic(e1Left.getFinish(), e2Left.getFinish()));
 		}
-		if (areBinaryTreesIsomorphic(e1Left.getFinish(), e2Left.getFinish())) {
-			return true;
-		}
-		return false;
+		return areBinaryTreesIsomorphic(e1Left.getFinish(), e2Left.getFinish());
 	}
 
 }

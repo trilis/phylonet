@@ -1,13 +1,12 @@
-package phylonet;
+package util;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Vector;
 
 public class Graph {
 
-	protected HashSet<Node> nodes = new HashSet<Node>();
+	public HashSet<Node> nodes = new HashSet<Node>();
 	
 	public Graph() {
 		
@@ -16,14 +15,16 @@ public class Graph {
 	public Graph(Graph old) {
 		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
 		for (Node n : old.nodes) {
-			Node nw = new Node(this, n.getTaxon());
+			Node nw = new Node(this);
+			if (n.isLeaf()) {
+				nw = new Node(this, n.getTaxon());
+			} 
 			nwnodes.put(n, nw);
 			addNode(nw);
 		}
 		for (Node n : old.nodes) {
-			Iterator<Edge> itr = n.getOutEdges();
-			while (itr.hasNext()) {
-				addEdge(nwnodes.get(n), nwnodes.get(itr.next().getFinish()));
+			for (Edge e : n.getOutEdges()) {
+				addEdge(nwnodes.get(n), nwnodes.get(e.getFinish()));
 			}
 		}
 	}
@@ -39,11 +40,8 @@ public class Graph {
 		if (!node.getGraph().equals(this)) {
 			throw new RuntimeException("Node from other graph");
 		}
-		Iterator<Edge> inEdges = node.getInEdges();
-		Iterator<Edge> outEdges = node.getOutEdges();
 		Vector<Edge> toRemove = new Vector<Edge>();
-		while (inEdges.hasNext()) {
-			Edge e = inEdges.next();
+		for (Edge e : node.getInEdges()) {
 			e.getStart().delOutEdge(e);
 			toRemove.add(e);
 		}
@@ -51,8 +49,7 @@ public class Graph {
 			node.delInEdge(e);
 		}
 		toRemove.clear();
-		while (outEdges.hasNext()) {
-			Edge e = outEdges.next();
+		for (Edge e : node.getOutEdges()) {
 			e.getFinish().delInEdge(e);
 			toRemove.add(e);
 		}
@@ -97,9 +94,8 @@ public class Graph {
 		if (!start.getGraph().equals(this) || !finish.getGraph().equals(this)) {
 			throw new RuntimeException("Node from other graph");
 		}
-		Iterator<Edge> itr = start.getOutEdges();
-		while (itr.hasNext()) {
-			if (itr.next().getFinish().equals(finish)) {
+		for (Edge e : start.getOutEdges()) {
+			if (e.getFinish().equals(finish)) {
 				return true;
 			}
 		}

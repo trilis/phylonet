@@ -2,8 +2,13 @@ package phylonet;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Vector;
+
+import util.Edge;
+import util.Graph;
+import util.Node;
+import util.PhyloTree;
+import util.Taxon;
 
 public class AgreementForest {
 
@@ -12,6 +17,10 @@ public class AgreementForest {
 	private Vector<PhyloTree> treesInOrder = new Vector<PhyloTree>();
 	private HashMap<Node, PhyloTree> components = new HashMap<Node, PhyloTree>();
 	private Graph graph = new Graph();
+	
+	public AgreementForest() {
+		
+	}
 	
 	public AgreementForest (AgreementForest old) {
 		HashMap<PhyloTree, PhyloTree> newtrees = new HashMap<PhyloTree, PhyloTree>();
@@ -28,21 +37,29 @@ public class AgreementForest {
 			treesInOrder.add(newtrees.get(tree));
 		}
 		for (Node n : old.components.keySet()) {
-			Node nw = new Node(graph, n.getTaxon());
+			Node nw = new Node(graph);
+			if (n.isLeaf()) {
+				nw = new Node(graph, n.getTaxon());
+			} 
 			newnodes.put(n, nw);
-			components.put(nw, newtrees.get(components.get(n)));
+			components.put(nw, newtrees.get(old.components.get(n)));
 			graph.addNode(nw);
 		}
 		for (Node n : old.components.keySet()) {
-			Iterator<Edge> iterator = n.getOutEdges();
-			while (iterator.hasNext()) {
-				graph.addEdge(newnodes.get(n), newnodes.get(iterator.next().getFinish()));
+			for (Edge e : n.getOutEdges()) {
+				graph.addEdge(newnodes.get(n), newnodes.get(e.getFinish()));
 			}
 		}
 	}
 
 	public AgreementForest(PhyloTree tree1, PhyloTree tree2, Vector<HashSet<Taxon>> partition) {
 		BuildAGDFS dfs = new BuildAGDFS(components);
+		for (Node n : tree1.nodes) {
+			n.numberOfVisits = 0;
+		}
+		for (Node n : tree2.nodes) {
+			n.numberOfVisits = 0;
+		}
 		for (HashSet<Taxon> taxa : partition) {
 			PhyloTree t1 = tree1.buildSubGraph(taxa);
 			PhyloTree t2 = tree2.buildSubGraph(taxa);
@@ -54,7 +71,13 @@ public class AgreementForest {
 				throw new IllegalArgumentException("Partition is illegal");
 			}
 		}
+
 		for (Node n : tree1.nodes) {
+			if (n.numberOfVisits > 1) {
+				throw new IllegalArgumentException("Partition is not node disjoint");
+			}
+		}
+		for (Node n : tree2.nodes) {
 			if (n.numberOfVisits > 1) {
 				throw new IllegalArgumentException("Partition is not node disjoint");
 			}
@@ -75,6 +98,45 @@ public class AgreementForest {
 		return graph.getNodesWithNoIncoming();
 	}
 	
+	public AgreementForest copyWithoutNode(Node v) {
+		AgreementForest nwaf = new AgreementForest();
+		HashMap<PhyloTree, PhyloTree> newtrees = new HashMap<PhyloTree, PhyloTree>();
+		HashMap<Node, Node> newnodes = new HashMap<Node, Node>();
+		for (PhyloTree tree : this.trees) {
+			PhyloTree nw = new PhyloTree(tree);
+			nwaf.trees.add(nw);
+			newtrees.put(tree, nw);
+		}
+		for (PhyloTree tree2 : this.trees2) {
+			nwaf.trees2.add(new PhyloTree(tree2));
+		}
+		for (PhyloTree tree : this.treesInOrder) {
+			nwaf.treesInOrder.add(newtrees.get(tree));
+		}
+		for (Node n : this.components.keySet()) {
+			Node nw = new Node(nwaf.graph);
+			if (n.isLeaf()) {
+				nw = new Node(nwaf.graph, n.getTaxon());
+			}
+			if (n != v) {
+				newnodes.put(n, nw);
+				nwaf.components.put(nw, newtrees.get(this.components.get(n)));
+				nwaf.graph.addNode(nw);
+			} else {
+				nwaf.treesInOrder.add(newtrees.get(this.components.get(n)));
+			}
+		}
+		for (Node n : this.components.keySet()) {
+			for (Edge e : n.getOutEdges()) {
+				Node u = e.getFinish();
+				if (n != v && n != u) {
+					nwaf.graph.addEdge(newnodes.get(n), newnodes.get(u));
+				}
+			}
+		}
+		return nwaf;
+	}
+	
 	public void delComponent(Node n) {
 		graph.delNode(n);
 		treesInOrder.add(components.get(n));
@@ -85,6 +147,14 @@ public class AgreementForest {
 		graph.addNode(n);
 		components.put(n, treesInOrder.lastElement());
 		treesInOrder.remove(components.get(n));
+	}
+	
+	public Iterable<PhyloTree> getOrdering() {
+		return treesInOrder;
+	}
+	
+	public int getNumberOfTrees() {
+		return trees.size();
 	}
 	
 }

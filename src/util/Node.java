@@ -1,15 +1,18 @@
-package phylonet;
+package util;
 
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.Vector;
 
 public class Node {
 	
-	private HashSet<Edge> inEdges = new HashSet<Edge>();
-	private HashSet<Edge> outEdges = new HashSet<Edge>();
+	private Vector<Edge> inEdges = new Vector<Edge>();
+	private Vector<Edge> outEdges = new Vector<Edge>();
 	private Graph graph;
 	private Taxon taxon;
 	public int numberOfVisits = 0;
+	
+	public Node(Graph graph) {
+		this.graph = graph;
+	}
 	
 	public Node(Graph graph, Taxon taxon) {
 		this.graph = graph;
@@ -17,9 +20,8 @@ public class Node {
 	}
 	
 	public Node copy(Graph newGraph) {
-		Node n = new Node(newGraph, taxon);
+		Node n = new Node(newGraph);
 		n.taxon = taxon;
-		n.graph = newGraph;
 		for (Edge e : inEdges) {
 			n.inEdges.add(new Edge(newGraph, e.getStart(), n));
 		}
@@ -49,12 +51,12 @@ public class Node {
 		return graph;
 	}
 	
-	public Iterator<Edge> getInEdges() {
-		return inEdges.iterator();
+	public Iterable<Edge> getInEdges() {
+		return inEdges;
 	}
 	
-	public Iterator<Edge> getOutEdges() {
-		return outEdges.iterator();
+	public Iterable<Edge> getOutEdges() {
+		return outEdges;
 	}
 	
 	public int getInDeg() {
@@ -71,5 +73,9 @@ public class Node {
 	
 	public Taxon getTaxon() {
 		return taxon;
+	}
+	
+	public Node getParent() {
+		return inEdges.get(0).getStart();
 	}
 }

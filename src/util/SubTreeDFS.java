@@ -1,8 +1,7 @@
-package phylonet;
+package util;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 public class SubTreeDFS extends DFS {
 
@@ -18,28 +17,33 @@ public class SubTreeDFS extends DFS {
 				Node v = n;
 				parents.add(v);
 				while (v.getInDeg() > 0) {
-					v = tree.getParent(v);
+					v = v.getParent();
 					parents.add(v);
 				}
 			}
 		}
 		for (Node n : parents) {
-			nwnodes.put(n, new Node(ans, n.getTaxon()));
+			Node nw = new Node(ans);
+			if (n.isLeaf()) {
+				nw = new Node(ans, n.getTaxon());
+			} 
+			nwnodes.put(n, nw);
 		}
 	}
 	
 	@Override
 	public void enter(Node v) {
 		if (!flag) {
-			Iterator<Edge> iterator = v.getOutEdges();
-			while (iterator.hasNext()) {
-				Edge e = iterator.next();
+			boolean breaked = false;
+			for (Edge e : v.getOutEdges()) {
 				if (!parents.contains(e.getFinish())) {
+					breaked = true;
 					break;
 				}
 			}
-			if (!iterator.hasNext()) {
+			if (parents.contains(v) && !breaked) {
 				flag = true;
+				ans.setRoot(nwnodes.get(v));
 				oldRoot = v;
 			}
 		}
@@ -51,12 +55,12 @@ public class SubTreeDFS extends DFS {
 
 	@Override
 	public void exit(Node v) {
-		Iterator<Edge> itr = v.getInEdges();
-		if (itr.hasNext()) {
-			Node u = itr.next().getStart();
+		for (Edge e : v.getInEdges()) {
+			Node u = e.getStart();
 			if (ans.hasNode(nwnodes.get(u)) && ans.hasNode(nwnodes.get(v))) {
 				ans.addEdge(nwnodes.get(u), nwnodes.get(v));
 			}
+			break;
 		}
 	}
 	

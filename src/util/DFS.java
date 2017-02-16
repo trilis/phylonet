@@ -1,7 +1,6 @@
-package phylonet;
+package util;
 
 import java.util.HashSet;
-import java.util.Iterator;
 
 public abstract class DFS {
 
@@ -13,9 +12,7 @@ public abstract class DFS {
 	public void dfs(Node v) {
 		used.add(v);
 		enter(v);
-		Iterator<Edge> iterator = v.getOutEdges();
-		while (iterator.hasNext()) {
-			Edge e = iterator.next();
+		for (Edge e : v.getOutEdges()) {
 			if (!used.contains(e.getFinish())) {
 				dfs(e.getFinish());
 			}

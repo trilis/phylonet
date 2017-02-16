@@ -1,4 +1,4 @@
-package phylonet;
+package util;
 
 public class Edge {
 	

@@ -3,6 +3,11 @@ package phylonet;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import util.DFS;
+import util.Graph;
+import util.Node;
+import util.PhyloTree;
+
 public class BuildAGDFS extends DFS {
 
 	private HashMap<Node, Node> map = new HashMap<Node, Node>();
@@ -11,7 +16,10 @@ public class BuildAGDFS extends DFS {
 	private Graph answer = new Graph();
 	
 	public void putNodes(Node node1, Node node2, PhyloTree tree) {
-		Node n = new Node(answer, node1.getTaxon());
+		Node n = new Node(answer);
+		if (node1.isLeaf()) {
+			n = new Node(answer, node1.getTaxon());
+		} 
 		answer.addNode(n);
 		map.put(node1, n);
 		map.put(node2, n);

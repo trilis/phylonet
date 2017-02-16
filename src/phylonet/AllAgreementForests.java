@@ -1,58 +1,73 @@
 package phylonet;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Vector;
 
+import util.Node;
+import util.PhyloTree;
+import util.Taxon;
+
 public class AllAgreementForests {
-	
-	Vector<Vector<HashSet<Taxon>>> allPartitions = new Vector<Vector<HashSet<Taxon>>>();
-	Vector<AgreementForest> allAgreementForests = new Vector<AgreementForest>();
-	
-	public AllAgreementForests(PhyloTree tree1, PhyloTree tree2, HashSet<Taxon> taxa) {
-		countAllPartitions(taxa, new Vector<HashSet<Taxon>>());
-		for (Vector<HashSet<Taxon>> partition : allPartitions) {
-			try {
-				AgreementForest af = new AgreementForest(tree1, tree2, partition);
-				allAgreementForests.addAll(getAllOrderings(af));
-			} catch (IllegalArgumentException exc) {};
+
+	private Vector<Vector<Vector<HashSet<Taxon>>>> allPartitions = new Vector<Vector<Vector<HashSet<Taxon>>>>();
+	private Vector<Vector<AgreementForest>> allAgreementForests = new Vector<Vector<AgreementForest>>();
+
+	public AllAgreementForests(PhyloTree tree1, PhyloTree tree2, Vector<Taxon> taxa) {
+		for (int i = 0; i < taxa.size(); i++) {
+			allAgreementForests.add(new Vector<AgreementForest>());
+			Vector<Vector<HashSet<Taxon>>> answer = new Vector<Vector<HashSet<Taxon>>>();
+			countAllPartitions(i + 1, 0, new HashMap<Integer, Integer>(), taxa, answer);
+			allPartitions.add(answer);
+			for (Vector<HashSet<Taxon>> partition : answer) {
+				try {
+					AgreementForest af = new AgreementForest(tree1, tree2, partition);
+					countAllOrderings(af, allAgreementForests.lastElement());
+				} catch (IllegalArgumentException exc) {};
+			}
+			if (allAgreementForests.lastElement().size() != 0) {
+				return;
+			}
 		}
 	}
 
-	public Vector<AgreementForest> getAllOrderings(AgreementForest af) {
-		Vector<AgreementForest> answer = new Vector<AgreementForest>();
+	public void countAllOrderings(AgreementForest af, Vector<AgreementForest> answer) {
 		Vector<Node> nodes = af.getNodesWithNoIncoming();
-		Iterator<Node> itr = nodes.iterator();
-		while (itr.hasNext()) {
-			Node n = itr.next();
-			af.delComponent(n);
-			if (itr.hasNext()) {
-				AgreementForest nwaf = new AgreementForest(af);
-				af.addComponent(n);
-				answer.addAll(getAllOrderings(nwaf));
-			} else {
-				answer.addAll(getAllOrderings(af));
-				return answer;
-			}
+		for (Node n : nodes) {
+			AgreementForest nwaf = af.copyWithoutNode(n);
+			countAllOrderings(nwaf, answer);
 		}
-		answer.add(af);
-		return answer;
+		if (af.isOrderingFull()) {
+			answer.add(af);
+		}
 	}
-	
-	public void countAllPartitions(HashSet<Taxon> taxa, Vector<HashSet<Taxon>> answer) {
-		if (taxa.size() == 0) {
-			allPartitions.add(answer);
+
+	public void countAllPartitions(int parts, int pos, HashMap<Integer, Integer> map, Vector<Taxon> taxa,
+			Vector<Vector<HashSet<Taxon>>> answer) {
+		if (pos == taxa.size()) {
+			Vector<HashSet<Taxon>> vec = new Vector<HashSet<Taxon>>();
+			for (int i = 0; i < parts; i++) {
+				vec.add(new HashSet<Taxon>());
+			}
+			HashSet<Integer> set = new HashSet<Integer>();
+			for (int i = 0; i < pos; i++) {
+				vec.get(map.get(i)).add(taxa.get(i));
+				set.add(map.get(i));
+			}
+			if (set.size() == parts) {
+				answer.addElement(vec);
+			}
 			return;
 		}
-		HashSet<Taxon> taxa2 = (HashSet<Taxon>)taxa.clone();
-		HashSet<Taxon> nw = new HashSet<Taxon>();
-		for (Taxon t : taxa) {
-			Vector<HashSet<Taxon>> nwans = (Vector<HashSet<Taxon>>)answer.clone();
-			taxa2.remove(t);
-			nw.add(t);
-			nwans.add(nw);
-			countAllPartitions(taxa2, nwans);
+		for (int i = 0; i < parts; i++) {
+			map.put(pos, i);
+			countAllPartitions(parts, pos + 1, map, taxa, answer);
 		}
 	}
+
+	public Iterable<AgreementForest> getAllAgreementForests() {
+		return allAgreementForests.lastElement();
+	}
+
 	
 }
