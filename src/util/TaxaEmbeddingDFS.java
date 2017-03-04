@@ -3,16 +3,16 @@ package util;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class SubTreeDFS extends DFS {
+public class TaxaEmbeddingDFS extends DFS {
 
 	private HashSet<Node> parents = new HashSet<Node>();
-	private HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
+	private HashMap<Node, Node> nwNodes = new HashMap<Node, Node>();
+	private HashMap<Node, Node> oldNodes = new HashMap<Node, Node>();
 	private PhyloTree ans = new PhyloTree();
-	boolean flag = false;
-	private Node oldRoot;
+	private boolean flag = false;
 	
-	public SubTreeDFS(HashSet<Taxon> taxa, PhyloTree tree) {
-		for (Node n : tree.nodes) {
+	public TaxaEmbeddingDFS(HashSet<Taxon> taxa, PhyloTree tree) {
+		for (Node n : tree.getNodes()) {
 			if (n.isLeaf() && taxa.contains(n.getTaxon())) {
 				Node v = n;
 				parents.add(v);
@@ -23,12 +23,11 @@ public class SubTreeDFS extends DFS {
 			}
 		}
 		for (Node n : parents) {
-			Node nw = new Node(ans);
-			if (n.isLeaf()) {
-				nw = new Node(ans, n.getTaxon());
-			} 
-			nwnodes.put(n, nw);
+			Node nw = new Node(ans, n);
+			nwNodes.put(n, nw);
+			oldNodes.put(nw, n);
 		}
+		dfs(tree.getRoot());
 	}
 	
 	@Override
@@ -43,13 +42,12 @@ public class SubTreeDFS extends DFS {
 			}
 			if (parents.contains(v) && !breaked) {
 				flag = true;
-				ans.setRoot(nwnodes.get(v));
-				oldRoot = v;
+				ans.setRoot(nwNodes.get(v));
 			}
 		}
 		if (flag && parents.contains(v)) {
 			v.numberOfVisits++;
-			ans.addNode(nwnodes.get(v));
+			ans.addNode(nwNodes.get(v));
 		}
 	}
 
@@ -57,19 +55,19 @@ public class SubTreeDFS extends DFS {
 	public void exit(Node v) {
 		for (Edge e : v.getInEdges()) {
 			Node u = e.getStart();
-			if (ans.hasNode(nwnodes.get(u)) && ans.hasNode(nwnodes.get(v))) {
-				ans.addEdge(nwnodes.get(u), nwnodes.get(v));
+			if (ans.hasNode(nwNodes.get(u)) && ans.hasNode(nwNodes.get(v))) {
+				ans.addEdge(nwNodes.get(u), nwNodes.get(v));
 			}
 			break;
 		}
 	}
 	
-	public Node getOldRoot() {
-		return oldRoot;
-	}
-	
 	public PhyloTree getAnswer() {
+		ans.compress();
 		return ans;
 	}
 
+	public Node getOldNode(Node v) {
+		return oldNodes.get(v);
+	}
 }

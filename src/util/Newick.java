@@ -1,5 +1,6 @@
 package util;
 
+import java.util.HashMap;
 import java.util.HashSet;
 
 import phylonet.AgreementForest;
@@ -8,6 +9,8 @@ import phylonet.AllAgreementForests;
 public class Newick {
 	
 	private HashSet<Taxon> taxa = new HashSet<Taxon>();
+	private HashMap<Node, Integer> mark = new HashMap<Node, Integer>();
+	private int reticulationCount = 0;
 	
 	public String phyloTreeToNewick(PhyloTree tree) {
 		if (tree.getRoot().isLeaf()) {
@@ -20,6 +23,11 @@ public class Newick {
 		if (root.isLeaf()) {
 			return root.getTaxon().name;
 		}
+		if (root.isReticulation()) {
+			if (mark.containsKey(root)) {
+				return "#H" + mark.get(root);
+			}
+		}
 		String res = "(";
 		for (Edge e : root.getOutEdges()) {
 			if (res.length() > 1) {
@@ -27,7 +35,13 @@ public class Newick {
 			}
 			res += nodeToNewick(e.getFinish());
 		}
-		return res + ")";
+		if (root.isReticulation()) {
+			reticulationCount++;
+			mark.put(root, reticulationCount);
+			return res + ")#H" + reticulationCount;
+		} else {
+			return res + ")";
+		}
 	}
 	
 	public String aafToNewick(AllAgreementForests aaf) {
@@ -42,7 +56,7 @@ public class Newick {
 	
 	public String afToNewick(AgreementForest af) {
 		String res = "";
-		for (PhyloTree tree : af.getOrdering()) {
+		for (PhyloTree tree : af.getTrees()) {
 			res += phyloTreeToNewick(tree) + "\n";
 		}
 		return res;
@@ -86,6 +100,15 @@ public class Newick {
 			tree.addNode(n);
 			return n;
 		}
+	}
+	
+	public String hybridizationNetworkToNewick(HybridizationNetwork hn) {
+		reticulationCount = 0;
+		mark = new HashMap<Node, Integer>();
+		if (hn.getRoot().isLeaf()) {
+			return hn.getRoot().getTaxon().name + ";";
+		}
+		return nodeToNewick(hn.getRoot()) + ";";
 	}
 	
 	public HashSet<Taxon> getTaxa() {

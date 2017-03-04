@@ -14,14 +14,20 @@ public class Node {
 		this.graph = graph;
 	}
 	
-	public Node(Graph graph, Taxon taxon) {
+	public Node(Graph graph, Node old) {
 		this.graph = graph;
-		this.taxon = taxon;
+		if (old.isLeaf()) {
+			this.taxon = old.getTaxon();
+		}
+	}
+	
+	public Node(Graph graph, Taxon t) {
+		this.graph = graph;
+		this.taxon = t;
 	}
 	
 	public Node copy(Graph newGraph) {
-		Node n = new Node(newGraph);
-		n.taxon = taxon;
+		Node n = new Node(newGraph, this);
 		for (Edge e : inEdges) {
 			n.inEdges.add(new Edge(newGraph, e.getStart(), n));
 		}
@@ -77,5 +83,46 @@ public class Node {
 	
 	public Node getParent() {
 		return inEdges.get(0).getStart();
+	}
+	
+	public boolean isReticulation() {
+		return this.getInDeg() > 1;
+	}
+	
+	public void setTaxon(Taxon t) {
+		taxon = t;
+	}
+	
+	@Override
+	public String toString() {
+		Newick newick = new Newick();
+		return "(node) " + newick.nodeToNewick(this);
+	}
+	
+	public boolean isAncestorOf(Node v) {
+		AncestorCheckDFS dfs = new AncestorCheckDFS(this, v);
+		return dfs.getAnswer();
+	}
+	
+	public Node getSibling() {
+		if (this.inEdges.size() == 0) {
+			throw new IllegalArgumentException("No sibling");
+		}
+		Node parent = this.getParent();
+		for (Edge e : parent.outEdges) {
+			if (e.getFinish() != this) {
+				return e.getFinish();
+			}
+		}
+		throw new IllegalArgumentException("No sibling");
+	}
+	
+	public boolean hasEdgeToReticulation() {
+		for (Edge e : outEdges) {
+			if (e.getFinish().isReticulation()) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

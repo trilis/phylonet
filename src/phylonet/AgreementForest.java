@@ -8,76 +8,46 @@ import util.Edge;
 import util.Graph;
 import util.Node;
 import util.PhyloTree;
+import util.TaxaEmbeddingDFS;
 import util.Taxon;
 
 public class AgreementForest {
 
 	private Vector<PhyloTree> trees = new Vector<PhyloTree>();
 	private Vector<PhyloTree> trees2 = new Vector<PhyloTree>();
-	private Vector<PhyloTree> treesInOrder = new Vector<PhyloTree>();
 	private HashMap<Node, PhyloTree> components = new HashMap<Node, PhyloTree>();
+	private HashMap<PhyloTree, Node> revComponents = new HashMap<PhyloTree, Node>();
 	private Graph graph = new Graph();
-	
-	public AgreementForest() {
-		
-	}
-	
-	public AgreementForest (AgreementForest old) {
-		HashMap<PhyloTree, PhyloTree> newtrees = new HashMap<PhyloTree, PhyloTree>();
-		HashMap<Node, Node> newnodes = new HashMap<Node, Node>();
-		for (PhyloTree tree : old.trees) {
-			PhyloTree nw = new PhyloTree(tree);
-			trees.add(nw);
-			newtrees.put(tree, nw);
-		}
-		for (PhyloTree tree2 : old.trees2) {
-			trees2.add(new PhyloTree(tree2));
-		}
-		for (PhyloTree tree : old.treesInOrder) {
-			treesInOrder.add(newtrees.get(tree));
-		}
-		for (Node n : old.components.keySet()) {
-			Node nw = new Node(graph);
-			if (n.isLeaf()) {
-				nw = new Node(graph, n.getTaxon());
-			} 
-			newnodes.put(n, nw);
-			components.put(nw, newtrees.get(old.components.get(n)));
-			graph.addNode(nw);
-		}
-		for (Node n : old.components.keySet()) {
-			for (Edge e : n.getOutEdges()) {
-				graph.addEdge(newnodes.get(n), newnodes.get(e.getFinish()));
-			}
-		}
-	}
 
 	public AgreementForest(PhyloTree tree1, PhyloTree tree2, Vector<HashSet<Taxon>> partition) {
-		BuildAGDFS dfs = new BuildAGDFS(components);
-		for (Node n : tree1.nodes) {
+		BuildAGDFS dfs = new BuildAGDFS(components, revComponents);
+		for (Node n : tree1.getNodes()) {
 			n.numberOfVisits = 0;
 		}
-		for (Node n : tree2.nodes) {
+		for (Node n : tree2.getNodes()) {
 			n.numberOfVisits = 0;
 		}
 		for (HashSet<Taxon> taxa : partition) {
-			PhyloTree t1 = tree1.buildSubGraph(taxa);
-			PhyloTree t2 = tree2.buildSubGraph(taxa);
-			if (t1.isIsomorphicTo(t2)) {
-				dfs.putNodes(t1.getOldRoot(), t2.getOldRoot(), t1);
-				trees.add(t1);
-				trees2.add(t2);
+			TaxaEmbeddingDFS subdfs1 = new TaxaEmbeddingDFS(taxa, tree1);
+			PhyloTree subGraph1 = subdfs1.getAnswer();
+			subGraph1.compress();
+			TaxaEmbeddingDFS subdfs2 = new TaxaEmbeddingDFS(taxa, tree2);
+			PhyloTree subGraph2 = subdfs2.getAnswer();
+			subGraph2.compress();
+			if (subGraph1.isIsomorphicTo(subGraph2)) {
+				dfs.putNodes(subdfs1.getOldNode(subGraph1.getRoot()), subdfs2.getOldNode(subGraph2.getRoot()), subGraph1);
+				trees.add(subGraph1);
+				trees2.add(subGraph2);
 			} else {
 				throw new IllegalArgumentException("Partition is illegal");
 			}
 		}
-
-		for (Node n : tree1.nodes) {
+		for (Node n : tree1.getNodes()) {
 			if (n.numberOfVisits > 1) {
 				throw new IllegalArgumentException("Partition is not node disjoint");
 			}
 		}
-		for (Node n : tree2.nodes) {
+		for (Node n : tree2.getNodes()) {
 			if (n.numberOfVisits > 1) {
 				throw new IllegalArgumentException("Partition is not node disjoint");
 			}
@@ -88,73 +58,31 @@ public class AgreementForest {
 		if (!graph.isTree()) {
 			throw new IllegalArgumentException("Agreement forest is not acyclic");
 		}
-	}
-	
-	public boolean isOrderingFull() {
-		return treesInOrder.size() == trees.size();
-	}
-	
-	public Vector<Node> getNodesWithNoIncoming() {
-		return graph.getNodesWithNoIncoming();
-	}
-	
-	public AgreementForest copyWithoutNode(Node v) {
-		AgreementForest nwaf = new AgreementForest();
-		HashMap<PhyloTree, PhyloTree> newtrees = new HashMap<PhyloTree, PhyloTree>();
-		HashMap<Node, Node> newnodes = new HashMap<Node, Node>();
-		for (PhyloTree tree : this.trees) {
-			PhyloTree nw = new PhyloTree(tree);
-			nwaf.trees.add(nw);
-			newtrees.put(tree, nw);
-		}
-		for (PhyloTree tree2 : this.trees2) {
-			nwaf.trees2.add(new PhyloTree(tree2));
-		}
-		for (PhyloTree tree : this.treesInOrder) {
-			nwaf.treesInOrder.add(newtrees.get(tree));
-		}
-		for (Node n : this.components.keySet()) {
-			Node nw = new Node(nwaf.graph);
-			if (n.isLeaf()) {
-				nw = new Node(nwaf.graph, n.getTaxon());
+		for (PhyloTree tree : trees) {
+			Node v = revComponents.get(tree);
+			if (v.getInDeg() != 0) {
+				throw new IllegalArgumentException("Ordering is not acyclic");
 			}
-			if (n != v) {
-				newnodes.put(n, nw);
-				nwaf.components.put(nw, newtrees.get(this.components.get(n)));
-				nwaf.graph.addNode(nw);
-			} else {
-				nwaf.treesInOrder.add(newtrees.get(this.components.get(n)));
+			Vector<Edge> toDel = new Vector<Edge>();
+			for (Edge e : v.getOutEdges()) {
+				toDel.add(e);
+			}
+			for (Edge e : toDel) {
+				graph.delEdge(e);
 			}
 		}
-		for (Node n : this.components.keySet()) {
-			for (Edge e : n.getOutEdges()) {
-				Node u = e.getFinish();
-				if (n != v && n != u) {
-					nwaf.graph.addEdge(newnodes.get(n), newnodes.get(u));
-				}
-			}
-		}
-		return nwaf;
-	}
-	
-	public void delComponent(Node n) {
-		graph.delNode(n);
-		treesInOrder.add(components.get(n));
-		components.remove(n);
-	}
-	
-	public void addComponent(Node n) {
-		graph.addNode(n);
-		components.put(n, treesInOrder.lastElement());
-		treesInOrder.remove(components.get(n));
-	}
-	
-	public Iterable<PhyloTree> getOrdering() {
-		return treesInOrder;
 	}
 	
 	public int getNumberOfTrees() {
 		return trees.size();
+	}
+	
+	public HashSet<Taxon> getTaxaOfTree(int treeNumber) {
+		return trees.get(treeNumber).getAllTaxa();
+	}
+	
+	public Iterable<PhyloTree> getTrees() {
+		return trees;
 	}
 	
 }

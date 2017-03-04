@@ -16,11 +16,12 @@ public class Lineage {
 	Vector<PhyloTree> input;
 	
 	public Lineage(Lineage lin) {
-		
+		input = lin.input;
 	}
 	
-	public Lineage(Taxon t) {
+	public Lineage(Taxon t, Vector<PhyloTree> input) {
 		taxa.add(t);
+		this.input = input;
 	}
 
 	public void addNodesFromLineage(Lineage lin) {
@@ -50,7 +51,7 @@ public class Lineage {
 			Node parent = n.getParent();
 			for (Edge e : parent.getOutEdges()) {
 				Node u = e.getFinish();
-				if ((u.isLeaf() && lin.containsTaxon(u.getTaxon())) || !u.isLeaf() && lin.containsNode(u)) {
+				if (u != n && ((u.isLeaf() && lin.containsTaxon(u.getTaxon())) || !u.isLeaf() && lin.containsNode(u))) {
 					return parent;
 				}
 			}
@@ -59,20 +60,12 @@ public class Lineage {
 	}
 
 	public Lineage coalesce(Lineage lin) {
-		for (ReticulationEvent event : reticulationEvents) {
-			if (lin.reticulationEvents.contains(event)) {
-				throw new IllegalArgumentException("Lineages share a reticulation");
-			}
-		}
 		Lineage newlin = new Lineage(lin);
-		if (this.isVanishable) {
-			newlin.addNodesFromLineage(lin);
+		for (ReticulationEvent event : this.reticulationEvents) {
+			newlin.addReticulationEvent(event);
 		}
-		if (lin.isVanishable) {
-			newlin.addNodesFromLineage(this);
-		}
-		if (this.isVanishable && lin.isVanishable) {
-			newlin.isVanishable = true;
+		for (ReticulationEvent event : lin.reticulationEvents) {
+			newlin.addReticulationEvent(event);
 		}
 		for (Node n : this.nodes) {
 			try {
@@ -82,9 +75,24 @@ public class Lineage {
 		for (Taxon t : this.taxa) {
 			for (PhyloTree tree : input) {
 				try {
+					if (tree.getNode(t) == null) {
+						System.out.println(tree + " " + t);
+					}
 					newlin.nodes.add(getParentForCoalescence(tree.getNode(t), lin));
 				} catch (IllegalArgumentException exc) {};
 			}
+		}
+		if (newlin.nodes.size() == 0) {
+			throw new IllegalArgumentException("Coalescence is redundant");
+		}
+		if (this.isVanishable) {
+			newlin.addNodesFromLineage(lin);
+		}
+		if (lin.isVanishable) {
+			newlin.addNodesFromLineage(this);
+		}
+		if (this.isVanishable && lin.isVanishable) {
+			newlin.isVanishable = true;
 		}
 		return newlin;
 	}
@@ -108,5 +116,32 @@ public class Lineage {
 			}
 		}
 		return false;
+	}
+	
+	public boolean isInitial() {
+		return taxa.size() == 1 && nodes.size() == 0;
+	}
+	
+	public Taxon getTaxon() {
+		if (!isInitial()) {
+			throw new IllegalArgumentException();
+		}
+		for (Taxon t : taxa) {
+			return t;
+		}
+		throw new IllegalArgumentException();
+	}
+	
+	@Override
+	public String toString() {
+		String res = "Nodes:\n";
+		for (Node n : nodes) {
+			res += n.toString() + " ";
+		}
+		res += "Taxa:\n";
+		for (Taxon t : taxa) {
+			res += t.toString() + " ";
+		}
+		return res;
 	}
 }

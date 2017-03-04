@@ -13,20 +13,20 @@ public class BuildAGDFS extends DFS {
 	private HashMap<Node, Node> map = new HashMap<Node, Node>();
 	private HashSet<Node> gray = new HashSet<Node>();
 	private HashMap<Node, PhyloTree> components = new HashMap<Node, PhyloTree>();
+	private HashMap<PhyloTree, Node> revComponents = new HashMap<PhyloTree, Node>();
 	private Graph answer = new Graph();
 	
 	public void putNodes(Node node1, Node node2, PhyloTree tree) {
-		Node n = new Node(answer);
-		if (node1.isLeaf()) {
-			n = new Node(answer, node1.getTaxon());
-		} 
+		Node n = new Node(answer, node1);
 		answer.addNode(n);
 		map.put(node1, n);
 		map.put(node2, n);
 		components.put(n, tree);
+		revComponents.put(tree, n);
 	}
 	
-	public BuildAGDFS(HashMap<Node, PhyloTree> components) {
+	public BuildAGDFS(HashMap<Node, PhyloTree> components, HashMap<PhyloTree, Node> revComponents) {
+		this.revComponents = revComponents;
 		this.components = components;
 	}
 	

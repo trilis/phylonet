@@ -6,7 +6,7 @@ import java.util.Vector;
 
 public class Graph {
 
-	public HashSet<Node> nodes = new HashSet<Node>();
+	private HashSet<Node> nodes = new HashSet<Node>();
 	
 	public Graph() {
 		
@@ -15,10 +15,7 @@ public class Graph {
 	public Graph(Graph old) {
 		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
 		for (Node n : old.nodes) {
-			Node nw = new Node(this);
-			if (n.isLeaf()) {
-				nw = new Node(this, n.getTaxon());
-			} 
+			Node nw = new Node(this, n);
 			nwnodes.put(n, nw);
 			addNode(nw);
 		}
@@ -81,13 +78,8 @@ public class Graph {
 	}
 	
 	public boolean isTree() {
-		CheckTreeDFS dfs = new CheckTreeDFS();
-		for (Node n : nodes) {
-			if (!dfs.isUsed(n)) {
-				dfs.dfs(n);
-			}
-		}
-		return dfs.isTree;
+		CheckTreeDFS dfs = new CheckTreeDFS(this);
+		return dfs.isTree();
 	}
 	
 	public boolean hasEdge(Node start, Node finish) {
@@ -110,6 +102,44 @@ public class Graph {
 			}
 		}
 		return answer;
+	}
+	
+	public void compress() {
+		Vector<Node> toRemove = new Vector<Node>();
+		for (Node n : nodes) {
+			Node p = n;
+			while (p.getInDeg() == 1 && p.getOutDeg() == 0 && p.getTaxon() == null) {
+				Node pp = p.getParent();
+				delEdge(p.getInEdges().iterator().next());
+				toRemove.add(p);
+				p = pp;
+			}
+		}
+		for (Node n : nodes) {
+			if (n.getInDeg() == 1 && n.getOutDeg() == 1) {
+				Edge in = null;
+				for (Edge e : n.getInEdges()) {
+					in = e;
+					break;
+				}
+				Edge out = null;
+				for (Edge e : n.getOutEdges()) {
+					out = e;
+					break;
+				}
+				in.getStart().delOutEdge(in);
+				out.getFinish().delInEdge(out);
+				addEdge(in.getStart(), out.getFinish());
+				toRemove.addElement(n);
+			}
+		}
+		for (Node n : toRemove) {
+			nodes.remove(n);
+		}
+	}
+	
+	public Iterable<Node> getNodes() {
+		return nodes;
 	}
 	
 }

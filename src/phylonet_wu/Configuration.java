@@ -1,6 +1,8 @@
 package phylonet_wu;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Vector;
 
 import util.Node;
@@ -8,10 +10,10 @@ import util.PhyloTree;
 import util.Taxon;
 
 public class Configuration {
-	private HashSet<Lineage> lineages = new HashSet<Lineage>();
+	private LinkedHashSet<Lineage> lineages = new LinkedHashSet<Lineage>();
 	private Event lastEvent;
 	private Vector<PhyloTree> input;
-	
+
 	public Configuration(Vector<PhyloTree> input) {
 		this.input = input;
 		HashSet<Taxon> taxa = new HashSet<Taxon>();
@@ -19,64 +21,66 @@ public class Configuration {
 			taxa.addAll(tree.getAllTaxa());
 		}
 		for (Taxon t : taxa) {
-			lineages.add(new Lineage(t));
+			lineages.add(new Lineage(t, input));
 		}
 	}
 
 	public Configuration(Configuration old) {
 		this.input = old.input;
 	}
-	
+
 	public Configuration configurationWithoutOldLineages(Event event) {
 		Configuration newconf = new Configuration(event.configurationSource);
 		HashSet<Lineage> forbidden = new HashSet<Lineage>();
 		if (event instanceof ReticulationEvent) {
-			forbidden.add(((ReticulationEvent)event).getLineageSource());
-		} else if (event instanceof CoalescenceEvent){
-			forbidden.addAll(((CoalescenceEvent)event).getLineageSources());
+			forbidden.add(((ReticulationEvent) event).getLineageSource());
+		} else if (event instanceof CoalescenceEvent) {
+			forbidden.addAll(((CoalescenceEvent) event).getLineageSources());
 		}
 		for (Lineage lin : lineages) {
 			if (!forbidden.contains(lin)) {
 				newconf.lineages.add(lin);
 			}
 		}
-		event.configurationTarget = newconf;
 		newconf.lastEvent = event;
 		return newconf;
 	}
 
-	public Vector<Configuration> doReticulations() {
-		Vector<Configuration> newConfigurations = new Vector<Configuration>();
+	public void doReticulations(HashSet<Configuration> ans) {
 		for (Lineage lin : lineages) {
 			Vector<Lineage> newLineages = lin.reticulate();
-			ReticulationEvent event = new ReticulationEvent(lin, newLineages.get(0), newLineages.get(1), this, null);
+			ReticulationEvent event = new ReticulationEvent(lin, newLineages.get(0), newLineages.get(1), this);
 			Configuration conf = this.configurationWithoutOldLineages(event);
 			for (Lineage newLin : newLineages) {
 				newLin.addReticulationEvent(event);
 			}
 			conf.lineages.addAll(newLineages);
-			newConfigurations.add(conf);
+			ans.add(conf);
 		}
-		return newConfigurations;
 	}
-	
-	public void doCoalescences(Vector<Configuration> ans) {
+
+	public void doCoalescences(HashSet<Configuration> ans) {
+		ans.add(this);
 		for (Lineage lin : lineages) {
 			for (Lineage lin2 : lineages) {
-				if (lin != lin2 && !lin.sharesReticulation(lin2)) {
-					Lineage newlin = lin.coalesce(lin2);
-					Event event = new CoalescenceEvent(lin, lin2, newlin, this, null);
-					Configuration conf = configurationWithoutOldLineages(event);
-					conf.lineages.add(newlin);
-					if (conf.isUseful()) {
-						ans.add(conf);
-						conf.doCoalescences(ans);
-					}
+				if (lin == lin2) {
+					break;
+				}
+				if (!lin.sharesReticulation(lin2)) {
+					try {
+						Lineage newlin = lin.coalesce(lin2);
+						Event event = new CoalescenceEvent(lin, lin2, newlin, this);
+						Configuration conf = configurationWithoutOldLineages(event);
+						conf.lineages.add(newlin);
+						if (conf.isUseful()) {
+							conf.doCoalescences(ans);
+						}
+					} catch (IllegalArgumentException exc) {};
 				}
 			}
 		}
 	}
-	
+
 	public boolean containsTaxon(Taxon t) {
 		for (Lineage lin : lineages) {
 			if (lin.containsTaxon(t)) {
@@ -85,7 +89,7 @@ public class Configuration {
 		}
 		return false;
 	}
-	
+
 	public boolean containsNode(Node n) {
 		for (Lineage lin : lineages) {
 			if (lin.containsNode(n)) {
@@ -94,13 +98,42 @@ public class Configuration {
 		}
 		return false;
 	}
-	
+
 	public boolean isUseful() {
 		CheckLineageDFS dfs = new CheckLineageDFS(this);
 		for (PhyloTree tree : input) {
 			dfs.dfs(tree.getRoot());
 		}
 		return dfs.isUseful();
+	}
+
+	public boolean isTerminal() {
+		for (PhyloTree tree : input) {
+			if (!(this.containsNode(tree.getRoot())
+					|| (tree.getRoot().isLeaf() && this.containsTaxon(tree.getRoot().getTaxon())))) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public Event getLastEvent() {
+		return lastEvent;
+	}
+	
+	public void matchLineagesWithRoot(HashMap<Lineage, Node> map, Node root) {
+		for (Lineage lin : lineages) {
+			map.put(lin, root);
+		}
+	}
+	
+	@Override
+	public String toString() {
+		String res = "Lineages:\n";
+		for (Lineage lin : lineages) {
+			res += lin.toString() + "\n";
+		}
+		return res;
 	}
 
 }
