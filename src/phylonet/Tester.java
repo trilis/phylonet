@@ -27,7 +27,8 @@ public class Tester {
 			System.out.println("SEARCHING NETWORKS WITH RETICULATION NUMBER " + i + "...");
 			ExhaustiveSearch search = new ExhaustiveSearch(input, i);
 			if (search.hasNetworks()) {
-				System.out.println("FOUND " + search.getNetworkNumber() + " NETWORKS WITH RETICULATION NUMBER " + i);
+				System.out.println("FOUND " + search.getNetworkNumber() + " NETWORK"
+						+ (search.getNetworkNumber() == 1 ? "" : "S") + " WITH RETICULATION NUMBER " + i);
 				for (HybridizationNetwork network : search.getAllHNetworks()) {
 					System.out.println(newick.hybridizationNetworkToNewick(network));
 				}

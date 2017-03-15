@@ -18,14 +18,16 @@ public class WuTester {
 		for (int i = 0; i < n; i++) {
 			input.add(newick.newickToPhyloTree(in.next()));
 		}
+		long t0 = System.currentTimeMillis();
 		ConfigurationSearch search = new ConfigurationSearch(input);
-		search.buildHybridizationNetwork();
-		for (HybridizationNetwork hn : search.networks) {
+		search.buildHybridizationNetworks();
+		System.out
+				.println("FOUND " + search.getNetworkNumber() + " NETWORK" + (search.getNetworkNumber() == 1 ? "" : "S")
+						+ " WITH RETICULATION NUMBER " + search.getReticulationNumber());
+		for (HybridizationNetwork hn : search.getNetworks()) {
 			System.out.println(newick.hybridizationNetworkToNewick(hn));
-			for (Node nd : hn.getNodes()) {
-				System.out.println(nd.isReticulation());
-			}
 		}
+		System.out.println("WORKED FOR " + (double) (System.currentTimeMillis() - t0) / 1000 + " SECONDS");
 		in.close();
 	}
 }

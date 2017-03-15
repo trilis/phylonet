@@ -141,5 +141,9 @@ public class Graph {
 	public Iterable<Node> getNodes() {
 		return nodes;
 	}
+
+	public int getSize() {
+		return ((Vector<Node>) getNodes()).size();
+	}
 	
 }

@@ -60,7 +60,7 @@ public class Configuration {
 	}
 
 	public void doCoalescences(HashSet<Configuration> ans) {
-		ans.add(this);
+		boolean flag = false;
 		for (Lineage lin : lineages) {
 			for (Lineage lin2 : lineages) {
 				if (lin == lin2) {
@@ -73,11 +73,15 @@ public class Configuration {
 						Configuration conf = configurationWithoutOldLineages(event);
 						conf.lineages.add(newlin);
 						if (conf.isUseful()) {
+							flag = true;
 							conf.doCoalescences(ans);
 						}
 					} catch (IllegalArgumentException exc) {};
 				}
 			}
+		}
+		if (!flag) {
+			ans.add(this);
 		}
 	}
 
@@ -108,13 +112,7 @@ public class Configuration {
 	}
 
 	public boolean isTerminal() {
-		for (PhyloTree tree : input) {
-			if (!(this.containsNode(tree.getRoot())
-					|| (tree.getRoot().isLeaf() && this.containsTaxon(tree.getRoot().getTaxon())))) {
-				return false;
-			}
-		}
-		return true;
+		return isUseful() && lineages.size() == 1;
 	}
 	
 	public Event getLastEvent() {

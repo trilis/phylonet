@@ -57,7 +57,7 @@ public class ExhaustiveSearch {
 	private Vector<HybridizationNetwork> countallHNetworks(PhyloTree tree1, PhyloTree tree2, Vector<Taxon> taxa,
 			int reticulationNumber) {
 		Vector<HybridizationNetwork> ans = new Vector<HybridizationNetwork>();
-		AllAgreementForests aaf = new AllAgreementForests(tree1, tree2, taxa, reticulationNumber);
+		NaiveAAF aaf = new NaiveAAF(tree1, tree2, taxa, reticulationNumber);
 		for (AgreementForest af : aaf.getAllAgreementForests()) {
 			HybridizationNetwork hn = new HybridizationNetwork(tree1);
 			HashSet<Taxon> added = new HashSet<Taxon>();

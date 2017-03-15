@@ -12,6 +12,7 @@ public class Lineage {
 	private HashSet<Node> nodes = new HashSet<Node>();
 	private HashSet<Taxon> taxa = new HashSet<Taxon>();
 	private boolean isVanishable = false;
+	private boolean isInitial = false;
 	private HashSet<ReticulationEvent> reticulationEvents = new HashSet<ReticulationEvent>();
 	Vector<PhyloTree> input;
 	
@@ -22,6 +23,7 @@ public class Lineage {
 	public Lineage(Taxon t, Vector<PhyloTree> input) {
 		taxa.add(t);
 		this.input = input;
+		this.isInitial = true;
 	}
 
 	public void addNodesFromLineage(Lineage lin) {
@@ -75,9 +77,6 @@ public class Lineage {
 		for (Taxon t : this.taxa) {
 			for (PhyloTree tree : input) {
 				try {
-					if (tree.getNode(t) == null) {
-						System.out.println(tree + " " + t);
-					}
 					newlin.nodes.add(getParentForCoalescence(tree.getNode(t), lin));
 				} catch (IllegalArgumentException exc) {};
 			}
@@ -110,20 +109,12 @@ public class Lineage {
 	}
 
 	public boolean sharesReticulation(Lineage lin) {
-		for (ReticulationEvent event : this.reticulationEvents) {
-			if (lin.reticulationEvents.contains(event)) {
-				return true;
-			}
-		}
+		//TODO
 		return false;
 	}
 	
-	public boolean isInitial() {
-		return taxa.size() == 1 && nodes.size() == 0;
-	}
-	
 	public Taxon getTaxon() {
-		if (!isInitial()) {
+		if (!isInitial) {
 			throw new IllegalArgumentException();
 		}
 		for (Taxon t : taxa) {
@@ -134,11 +125,11 @@ public class Lineage {
 	
 	@Override
 	public String toString() {
-		String res = "Nodes:\n";
+		String res = "Nodes:";
 		for (Node n : nodes) {
 			res += n.toString() + " ";
 		}
-		res += "Taxa:\n";
+		res += "Taxa:";
 		for (Taxon t : taxa) {
 			res += t.toString() + " ";
 		}

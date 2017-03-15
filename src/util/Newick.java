@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import phylonet.AgreementForest;
-import phylonet.AllAgreementForests;
+import phylonet.NaiveAAF;
 
 public class Newick {
 	
@@ -44,7 +44,7 @@ public class Newick {
 		}
 	}
 	
-	public String aafToNewick(AllAgreementForests aaf) {
+	public String aafToNewick(NaiveAAF aaf) {
 		String res = "";
 		int num = 1;
 		for (AgreementForest af : aaf.getAllAgreementForests()) {

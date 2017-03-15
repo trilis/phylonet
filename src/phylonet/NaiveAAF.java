@@ -6,13 +6,13 @@ import java.util.Vector;
 import util.PhyloTree;
 import util.Taxon;
 
-public class AllAgreementForests {
+public class NaiveAAF {
 
 	private Vector<AgreementForest> allAgreementForests = new Vector<AgreementForest>();
 	private PhyloTree tree1, tree2;
 	private int[] map;
 
-	public AllAgreementForests(PhyloTree tree1, PhyloTree tree2, Vector<Taxon> taxa, int reticulationNumber) {
+	public NaiveAAF(PhyloTree tree1, PhyloTree tree2, Vector<Taxon> taxa, int reticulationNumber) {
 		this.tree1 = tree1;
 		this.tree2 = tree2;
 		map = new int[taxa.size()];

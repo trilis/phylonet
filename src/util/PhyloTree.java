@@ -2,6 +2,7 @@ package util;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Vector;
 
 public class PhyloTree extends Graph {
 
