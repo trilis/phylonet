@@ -11,11 +11,11 @@ public class HybridizationNetwork extends Graph {
 	public Node getRoot() {
 		return root;
 	}
-	
+
 	public HybridizationNetwork() {
-		
+
 	}
-	
+
 	public HybridizationNetwork(PhyloTree tree) {
 		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
 		for (Node n : tree.getNodes()) {
@@ -38,25 +38,25 @@ public class HybridizationNetwork extends Graph {
 		addNode(n);
 	}
 
-	private void go(Vector<Node> nodes, int position, PhyloTree tree, HashMap<Node, Node> newNodes) {
-		if (position == nodes.size()) {
-			tree.compress();
+	private void go(Vector<Node> vecNodes, int position, PhyloTree tree, HashMap<Node, Node> newNodes) {
+		if (position == vecNodes.size()) {
+			tree.deleteFakeLeaves();
 			displayedTrees.add(tree);
 			return;
 		}
-		Node v = nodes.get(position);
+		Node v = vecNodes.get(position);
 		if (!v.isReticulation()) {
 			if (v.getInDeg() != 0) {
 				Node u = v.getParent();
 				tree.addEdge(newNodes.get(u), newNodes.get(v));
 			}
-			go(nodes, position + 1, tree, newNodes);
+			go(vecNodes, position + 1, tree, newNodes);
 			return;
 		}
 		for (Edge edgeSelected : v.getInEdges()) {
 			PhyloTree newTree = new PhyloTree();
 			HashMap<Node, Node> newNodes2 = new HashMap<Node, Node>();
-			for (Node n : nodes) {
+			for (Node n : vecNodes) {
 				Node newNode = new Node(newTree, n);
 				newTree.addNode(newNode);
 				if (n == root) {
@@ -72,7 +72,7 @@ public class HybridizationNetwork extends Graph {
 				}
 			}
 			newTree.addEdge(newNodes2.get(edgeSelected.getStart()), newNodes2.get(v));
-			go(nodes, position + 1, newTree, newNodes2);
+			go(vecNodes, position + 1, newTree, newNodes2);
 		}
 	}
 
@@ -96,26 +96,50 @@ public class HybridizationNetwork extends Graph {
 		}
 		go(vecNodes, 0, tree, newNodes);
 	}
-	
+
 	public boolean displays(PhyloTree tree) {
 		for (PhyloTree pt : displayedTrees) {
-			if (tree.isIsomorphicTo(pt)) {
+			PhyloTree cpt = new PhyloTree(pt);
+			cpt.compress();
+			if (tree.isIsomorphicTo(cpt)) {
 				return true;
 			}
 		}
 		return false;
 	}
-	
+
 	public Iterable<PhyloTree> getDisplayedTrees() {
 		return displayedTrees;
 	}
-	
+
 	public Node getOldNode(Node v) {
 		return oldNodes.get(v);
 	}
-	
+
 	public void setRoot(Node root) {
 		this.root = root;
+	}
+
+	public int getReticulationNumber() {
+		int ans = 0;
+		for (Node n : getNodes()) {
+			if (n.getInDeg() > 1) {
+				ans += n.getInDeg() - 1;
+			}
+		}
+		return ans;
+	}
+
+	public void killFakeTaxon(Taxon rho) {
+		for (Node n : getNodes()) {
+			if (n.isLeaf() && n.getTaxon().equals(rho)) {
+				Node newRoot = n.getSibling();
+				setRoot(newRoot);
+				delNode(n.getParent());
+				delNode(n);
+				break;
+			}
+		}
 	}
 
 }

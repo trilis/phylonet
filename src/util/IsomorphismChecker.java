@@ -5,22 +5,22 @@ import java.util.HashSet;
 import java.util.Vector;
 
 public class IsomorphismChecker {
-	
+
 	private HashMap<Node, HashSet<Taxon>> subtreeTaxa = new HashMap<Node, HashSet<Taxon>>();
 	private HashMap<Vector<Node>, Boolean> memorization = new HashMap<Vector<Node>, Boolean>();
-	
+
 	public void countSubtreeTaxa(PhyloTree tree) {
 		SubtreeTaxaDFS dfs = new SubtreeTaxaDFS();
 		dfs.dfs(tree.getRoot());
 		subtreeTaxa.putAll(dfs.getMap());
 	}
-	
+
 	public void countSubtreeTaxa(HybridizationNetwork hn) {
 		SubtreeTaxaDFS dfs = new SubtreeTaxaDFS();
 		dfs.dfs(hn.getRoot());
 		subtreeTaxa.putAll(dfs.getMap());
 	}
-	
+
 	public boolean areBinaryTreesIsomorphic(PhyloTree tree1, PhyloTree tree2) {
 		countSubtreeTaxa(tree1);
 		countSubtreeTaxa(tree2);
@@ -53,7 +53,7 @@ public class IsomorphismChecker {
 			return false;
 		}
 		if (root1.getOutDeg() == 1) {
-			Boolean ans = areSubtreesIsomorphic(root1.getOutEdges().iterator().next().getFinish(), 
+			Boolean ans = areSubtreesIsomorphic(root1.getOutEdges().iterator().next().getFinish(),
 					root2.getOutEdges().iterator().next().getFinish());
 			memorization.put(vec, ans);
 			return ans;
@@ -79,17 +79,17 @@ public class IsomorphismChecker {
 		}
 		return false;
 	}
-	
+
 	public HashSet<Taxon> getSubtreeTaxa(Node v) {
 		return subtreeTaxa.get(v);
 	}
-	
+
 	public boolean haveSameTaxa(Node v, Node u) {
 		HashSet<Taxon> taxa1 = subtreeTaxa.get(v);
 		HashSet<Taxon> taxa2 = subtreeTaxa.get(u);
 		return taxa1.equals(taxa2);
 	}
-	
+
 	public boolean areNetworksIsomorphic(HybridizationNetwork hn1, HybridizationNetwork hn2) {
 		countSubtreeTaxa(hn1);
 		countSubtreeTaxa(hn2);

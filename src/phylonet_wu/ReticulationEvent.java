@@ -10,15 +10,15 @@ public class ReticulationEvent extends Event {
 		this.lineageTarget2 = lineageTarget2;
 		this.configurationSource = configurationSource;
 	}
-	
+
 	public Lineage getLineageSource() {
 		return lineageSource;
 	}
-	
+
 	public Lineage getLineageTarget1() {
 		return lineageTarget1;
 	}
-	
+
 	public Lineage getLineageTarget2() {
 		return lineageTarget2;
 	}

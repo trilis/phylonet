@@ -13,11 +13,10 @@ import util.Taxon;
 
 public class AgreementForest extends Forest {
 
-	private HashMap<Node, PhyloTree> components = new HashMap<Node, PhyloTree>();
-	private HashMap<PhyloTree, Node> revComponents = new HashMap<PhyloTree, Node>();
-	private Graph graph = new Graph();
-
 	public AgreementForest(PhyloTree tree1, PhyloTree tree2, Vector<HashSet<Taxon>> partition) {
+		HashMap<Node, PhyloTree> components = new HashMap<Node, PhyloTree>();
+		HashMap<PhyloTree, Node> revComponents = new HashMap<PhyloTree, Node>();
+		Graph graph = new Graph();
 		Vector<PhyloTree> trees2 = new Vector<PhyloTree>();
 		BuildAGDFS dfs = new BuildAGDFS(components, revComponents);
 		for (Node n : tree1.getNodes()) {
@@ -34,7 +33,8 @@ public class AgreementForest extends Forest {
 			PhyloTree subGraph2 = subdfs2.getAnswer();
 			subGraph2.compress();
 			if (subGraph1.isIsomorphicTo(subGraph2)) {
-				dfs.putNodes(subdfs1.getOldNode(subGraph1.getRoot()), subdfs2.getOldNode(subGraph2.getRoot()), subGraph1);
+				dfs.putNodes(subdfs1.getOldNode(subGraph1.getRoot()), subdfs2.getOldNode(subGraph2.getRoot()),
+						subGraph1);
 				addTree(subGraph1);
 				trees2.add(subGraph2);
 			} else {
@@ -71,6 +71,9 @@ public class AgreementForest extends Forest {
 			}
 		}
 	}
-	
-	
+
+	public AgreementForest(Forest forest) {
+		super(forest);
+	}
+
 }

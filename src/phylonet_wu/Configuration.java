@@ -29,7 +29,7 @@ public class Configuration {
 		this.input = old.input;
 	}
 
-	public Configuration configurationWithoutOldLineages(Event event) {
+	private Configuration configurationWithoutOldLineages(Event event) {
 		Configuration newconf = new Configuration(event.configurationSource);
 		HashSet<Lineage> forbidden = new HashSet<Lineage>();
 		if (event instanceof ReticulationEvent) {
@@ -60,28 +60,24 @@ public class Configuration {
 	}
 
 	public void doCoalescences(HashSet<Configuration> ans) {
-		boolean flag = false;
+		ans.add(this);
 		for (Lineage lin : lineages) {
 			for (Lineage lin2 : lineages) {
 				if (lin == lin2) {
 					break;
 				}
-				if (!lin.sharesReticulation(lin2)) {
-					try {
-						Lineage newlin = lin.coalesce(lin2);
-						Event event = new CoalescenceEvent(lin, lin2, newlin, this);
-						Configuration conf = configurationWithoutOldLineages(event);
-						conf.lineages.add(newlin);
-						if (conf.isUseful()) {
-							flag = true;
-							conf.doCoalescences(ans);
-						}
-					} catch (IllegalArgumentException exc) {};
+				try {
+					Lineage newlin = lin.coalesce(lin2);
+					Event event = new CoalescenceEvent(lin, lin2, newlin, this);
+					Configuration conf = configurationWithoutOldLineages(event);
+					conf.lineages.add(newlin);
+					if (conf.isUseful()) {
+						conf.doCoalescences(ans);
+					}
+				} catch (IllegalArgumentException exc) {
 				}
+				;
 			}
-		}
-		if (!flag) {
-			ans.add(this);
 		}
 	}
 
@@ -114,17 +110,17 @@ public class Configuration {
 	public boolean isTerminal() {
 		return isUseful() && lineages.size() == 1;
 	}
-	
+
 	public Event getLastEvent() {
 		return lastEvent;
 	}
-	
+
 	public void matchLineagesWithRoot(HashMap<Lineage, Node> map, Node root) {
 		for (Lineage lin : lineages) {
 			map.put(lin, root);
 		}
 	}
-	
+
 	@Override
 	public String toString() {
 		String res = "Lineages:\n";

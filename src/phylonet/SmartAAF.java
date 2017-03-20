@@ -6,47 +6,88 @@ import java.util.Vector;
 
 import util.Edge;
 import util.Graph;
+import util.IsomorphismChecker;
 import util.Node;
 import util.PathDFS;
 import util.PhyloTree;
+import util.TaxaEmbeddingDFS;
 import util.Taxon;
 
 public class SmartAAF {
 
 	private Vector<AgreementForest> allAgreementForests = new Vector<AgreementForest>();
 	private int reticulationNumber;
-	private HashMap<Node, HashSet<Taxon>> labels;
+	private PhyloTree originalFirstTree, originalSecondTree;
+	private HashMap<Node, HashSet<Taxon>> labels = new HashMap<Node, HashSet<Taxon>>();
 
 	public SmartAAF(PhyloTree tree1, PhyloTree tree2, int reticulationNumber) {
 		this.reticulationNumber = reticulationNumber;
-		for (Node n : tree1.getNodes()) {
+		this.originalFirstTree = new PhyloTree(tree1);
+		this.originalSecondTree = new PhyloTree(tree2);
+		PhyloTree newTree1 = new PhyloTree(tree1);
+		PhyloTree newTree2 = new PhyloTree(tree2);
+		for (Node n : newTree1.getNodes()) {
 			if (n.isLeaf()) {
 				HashSet<Taxon> taxa = new HashSet<Taxon>();
 				taxa.add(n.getTaxon());
 				labels.put(n, taxa);
 			}
 		}
-		build(tree1, new Forest(tree2), new HashSet<Cherry>());
+		build(newTree1, new Forest(newTree2), new HashSet<Cherry>());
 	}
 
 	private void build(PhyloTree tree, Forest forest, HashSet<Cherry> removedCherries) {
+		tree.softCompress();
 		if (forest.getNumberOfTrees() > reticulationNumber + 1) {
 			return;
 		}
-		if (tree.getSize() == 1) {
+		if (getAnyCherry(tree) == null) {
 			Forest answer = forest.recoverAnswer(removedCherries);
-			Graph ADG = new Graph();
-			
+			Graph graph = new Graph();
+			HashMap<Node, TaxaEmbeddingDFS> embeddings1 = new HashMap<Node, TaxaEmbeddingDFS>();
+			HashMap<Node, TaxaEmbeddingDFS> embeddings2 = new HashMap<Node, TaxaEmbeddingDFS>();
+			HashMap<PhyloTree, Node> treesToNodes = new HashMap<PhyloTree, Node>();
+			HashMap<Node, PhyloTree> nodesToTrees = new HashMap<Node, PhyloTree>();
+			IsomorphismChecker checker = new IsomorphismChecker();
+			for (PhyloTree tree1 : answer.getTrees()) {
+				Node nw = new Node(graph);
+				graph.addNode(nw);
+				checker.countSubtreeTaxa(tree1);
+				TaxaEmbeddingDFS dfs1 = new TaxaEmbeddingDFS(checker.getSubtreeTaxa(tree1.getRoot()),
+						originalFirstTree);
+				TaxaEmbeddingDFS dfs2 = new TaxaEmbeddingDFS(checker.getSubtreeTaxa(tree1.getRoot()),
+						originalSecondTree);
+				embeddings1.put(nw, dfs1);
+				embeddings2.put(nw, dfs2);
+				treesToNodes.put(tree1, nw);
+				nodesToTrees.put(nw, tree1);
+			}
+			for (PhyloTree tree1 : answer.getTrees()) {
+				for (PhyloTree tree2 : answer.getTrees()) {
+					if (tree1 == tree2) {
+						continue;
+					}
+					Node v = treesToNodes.get(tree1);
+					Node u = treesToNodes.get(tree2);
+					if (embeddings1.get(v).getOldRoot().isAncestorOf(embeddings1.get(u).getOldRoot())
+							|| embeddings2.get(v).getOldRoot().isAncestorOf(embeddings2.get(u).getOldRoot())) {
+						graph.addEdge(v, u);
+					}
+				}
+			}
+			if (graph.isTree()) {
+				buildAgreementForests(answer.getNumberOfTrees(), graph, nodesToTrees, new Forest());
+			}
 			return;
 		}
-		PhyloTree newTree = copyLabeledTree(tree);
+		PhyloTree newTree = new LabeledTreeCopy(tree, labels).getAnswer();
 		Vector<Node> isolatedNodes = getIsolatedNodes(newTree, forest);
 		if (isolatedNodes.size() > 0) {
 			for (Node n : isolatedNodes) {
 				newTree.delNode(n);
+				build(newTree, forest, removedCherries);
+				return;
 			}
-			build(newTree, forest, removedCherries);
-			return;
 		}
 		Cherry cherry = getAnyCherry(tree);
 		Node node1 = forest.findLabel(cherry.getOldLabel1());
@@ -78,30 +119,10 @@ public class SmartAAF {
 		}
 	}
 
-	private PhyloTree copyLabeledTree(PhyloTree old) {
-		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
-		PhyloTree newTree = new PhyloTree();
-		for (Node n : old.getNodes()) {
-			Node nw = new Node(newTree, n);
-			if (n == old.getRoot()) {
-				newTree.setRoot(nw);
-			}
-			nwnodes.put(n, nw);
-			newTree.addNode(nw);
-			labels.put(nw, labels.get(n));
-		}
-		for (Node n : old.getNodes()) {
-			for (Edge edg : n.getOutEdges()) {
-				newTree.addEdge(nwnodes.get(n), nwnodes.get(edg.getFinish()));
-			}
-		}
-		return newTree;
-	}
-
 	private Vector<Node> getIsolatedNodes(PhyloTree tree, Forest forest) {
 		Vector<Node> ans = new Vector<Node>();
 		for (Node n : tree.getNodes()) {
-			if (n.isLeaf() && forest.findLabel(labels.get(n)).getGraph().getSize() == 1) {
+			if (n.isLeaf() && forest.findLabel(labels.get(n)).getGraph().numberOfLeaves() == 1) {
 				ans.add(n);
 			}
 		}
@@ -118,27 +139,70 @@ public class SmartAAF {
 					}
 				}
 				if (oldNodes.size() == 2) {
-					return new Cherry(labels.get(oldNodes.get(0)), labels.get(oldNodes.get(1)),
-							oldNodes.get(0), oldNodes.get(1));
+					return new Cherry(labels.get(oldNodes.get(0)), labels.get(oldNodes.get(1)), oldNodes.get(0),
+							oldNodes.get(1));
 				}
 			}
 		}
 		return null;
 	}
-	
-	public PhyloTree eatCherry(PhyloTree tree, Cherry cherry) {
-		PhyloTree newTree = copyLabeledTree(tree);
+
+	private PhyloTree eatCherry(PhyloTree tree, Cherry cherry) {
+		PhyloTree newTree = new LabeledTreeCopy(tree, labels).getAnswer();
 		Vector<Node> toRemove = new Vector<Node>();
 		for (Node n : newTree.getNodes()) {
-			if (labels.get(n).equals(cherry.getOldLabel1())) {
+			if (n.isLeaf() && labels.get(n).equals(cherry.getOldLabel1())) {
 				toRemove.add(n);
 				labels.put(n.getParent(), cherry.getNewLabel());
+			}
+			if (n.isLeaf() && labels.get(n).equals(cherry.getOldLabel2())) {
+				toRemove.add(n);
 			}
 		}
 		for (Node n : toRemove) {
 			newTree.delNode(n);
 		}
 		return newTree;
+	}
+
+	private void buildAgreementForests(int k, Graph graph, HashMap<Node, PhyloTree> nodesToTrees, Forest addedTrees) {
+		if (addedTrees.getNumberOfTrees() == k) {
+			allAgreementForests.add(new AgreementForest(addedTrees));
+			return;
+		}
+		for (Node n : graph.getNodes()) {
+			if (n.getInDeg() == 0) {
+				Forest newTrees = new Forest(addedTrees);
+				newTrees.addTree(nodesToTrees.get(n));
+				buildAgreementForests(k, graphWithoutNode(graph, n, nodesToTrees), nodesToTrees, newTrees);
+			}
+		}
+	}
+
+	private Graph graphWithoutNode(Graph old, Node v, HashMap<Node, PhyloTree> nodesToTrees) {
+		Graph graph = new Graph();
+		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
+		for (Node n : old.getNodes()) {
+			if (n == v) {
+				continue;
+			}
+			Node nw = new Node(graph, n);
+			nwnodes.put(n, nw);
+			nodesToTrees.put(nw, nodesToTrees.get(n));
+			graph.addNode(nw);
+		}
+		for (Node n : old.getNodes()) {
+			for (Edge e : n.getOutEdges()) {
+				if (n != v && e.getFinish() != v) {
+					graph.addEdge(nwnodes.get(n), nwnodes.get(e.getFinish()));
+				}
+			}
+		}
+		return graph;
+	}
+
+	public Iterable<AgreementForest> getAllAgreementForests() {
+		return allAgreementForests;
 	}
 
 }

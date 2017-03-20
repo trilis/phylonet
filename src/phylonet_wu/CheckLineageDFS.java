@@ -8,11 +8,11 @@ public class CheckLineageDFS extends DFS {
 	private Configuration conf;
 	private int coveringCount = 0;
 	private boolean isUseful = true;
-	
+
 	public CheckLineageDFS(Configuration conf) {
 		this.conf = conf;
 	}
-	
+
 	public boolean isCovered(Node v) {
 		if (v.isLeaf() && conf.containsTaxon(v.getTaxon())) {
 			return true;
@@ -22,7 +22,7 @@ public class CheckLineageDFS extends DFS {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void enter(Node v) {
 		if (isCovered(v)) {
@@ -39,7 +39,7 @@ public class CheckLineageDFS extends DFS {
 			coveringCount--;
 		}
 	}
-	
+
 	public boolean isUseful() {
 		return isUseful;
 	}

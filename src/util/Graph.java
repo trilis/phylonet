@@ -7,11 +7,11 @@ import java.util.Vector;
 public class Graph {
 
 	private HashSet<Node> nodes = new HashSet<Node>();
-	
+
 	public Graph() {
-		
+
 	}
-	
+
 	public Graph(Graph old) {
 		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
 		for (Node n : old.nodes) {
@@ -25,14 +25,14 @@ public class Graph {
 			}
 		}
 	}
-	
+
 	public void addNode(Node node) {
 		if (!node.getGraph().equals(this)) {
 			throw new RuntimeException("Node from other graph");
 		}
 		nodes.add(node);
 	}
-	
+
 	public void delNode(Node node) {
 		if (!node.getGraph().equals(this)) {
 			throw new RuntimeException("Node from other graph");
@@ -55,7 +55,7 @@ public class Graph {
 		}
 		nodes.remove(node);
 	}
-	
+
 	public void addEdge(Node start, Node finish) {
 		if (!start.getGraph().equals(this) || !finish.getGraph().equals(this)) {
 			throw new RuntimeException("Node from other graph");
@@ -64,7 +64,7 @@ public class Graph {
 		start.addOutEdge(edge);
 		finish.addInEdge(edge);
 	}
-	
+
 	public void delEdge(Edge edge) {
 		if (!edge.getGraph().equals(this)) {
 			throw new RuntimeException("Edge from other graph");
@@ -72,16 +72,16 @@ public class Graph {
 		edge.getStart().delOutEdge(edge);
 		edge.getFinish().delInEdge(edge);
 	}
-	
+
 	public boolean hasNode(Node node) {
 		return nodes.contains(node);
 	}
-	
+
 	public boolean isTree() {
 		CheckTreeDFS dfs = new CheckTreeDFS(this);
 		return dfs.isTree();
 	}
-	
+
 	public boolean hasEdge(Node start, Node finish) {
 		if (!start.getGraph().equals(this) || !finish.getGraph().equals(this)) {
 			throw new RuntimeException("Node from other graph");
@@ -93,7 +93,7 @@ public class Graph {
 		}
 		return false;
 	}
-	
+
 	public Vector<Node> getNodesWithNoIncoming() {
 		Vector<Node> answer = new Vector<Node>();
 		for (Node n : nodes) {
@@ -103,8 +103,8 @@ public class Graph {
 		}
 		return answer;
 	}
-	
-	public void compress() {
+
+	public void deleteFakeLeaves() {
 		Vector<Node> toRemove = new Vector<Node>();
 		for (Node n : nodes) {
 			Node p = n;
@@ -115,6 +115,18 @@ public class Graph {
 				p = pp;
 			}
 		}
+		for (Node n : toRemove) {
+			delNode(n);
+		}
+	}
+
+	public void compress() {
+		deleteFakeLeaves();
+		softCompress();
+	}
+
+	public void softCompress() {
+		Vector<Node> toRemove = new Vector<Node>();
 		for (Node n : nodes) {
 			if (n.getInDeg() == 1 && n.getOutDeg() == 1) {
 				Edge in = null;
@@ -137,13 +149,23 @@ public class Graph {
 			nodes.remove(n);
 		}
 	}
-	
+
 	public Iterable<Node> getNodes() {
 		return nodes;
 	}
 
 	public int getSize() {
-		return ((Vector<Node>) getNodes()).size();
+		return nodes.size();
 	}
-	
+
+	public int numberOfLeaves() {
+		int cnt = 0;
+		for (Node n : nodes) {
+			if (n.isLeaf()) {
+				cnt++;
+			}
+		}
+		return cnt;
+	}
+
 }

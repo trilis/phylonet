@@ -12,7 +12,7 @@ import util.Taxon;
 
 public class ConfigurationSearch {
 
-	private Vector<HashSet<Configuration>> allConfigurations = new Vector<HashSet<Configuration>>();
+	private HashSet<Configuration> allConfigurations = new HashSet<Configuration>();
 	private HashSet<HybridizationNetwork> networks = new HashSet<HybridizationNetwork>();
 	private HashSet<Configuration> terminal = new HashSet<Configuration>();
 	private HashMap<Lineage, Node> map = new HashMap<Lineage, Node>();
@@ -22,10 +22,10 @@ public class ConfigurationSearch {
 		HashSet<Configuration> start = new HashSet<Configuration>();
 		Configuration startConfiguration = new Configuration(input);
 		startConfiguration.doCoalescences(start);
-		allConfigurations.add(start);
-		for (int i = 0; ; i++) {
+		allConfigurations.addAll(start);
+		for (int i = 0;; i++) {
 			reticulationNumber = i;
-			for (Configuration conf : allConfigurations.lastElement()) {
+			for (Configuration conf : allConfigurations) {
 				if (conf.isTerminal()) {
 					terminal.add(conf);
 				}
@@ -35,14 +35,14 @@ public class ConfigurationSearch {
 			}
 			System.out.println("SEARCHING NETWORKS WITH RETICULATION NUMBER " + (i + 1) + "...");
 			HashSet<Configuration> nextLevel = new HashSet<Configuration>();
-			for (Configuration conf : allConfigurations.lastElement()) {
+			for (Configuration conf : allConfigurations) {
 				HashSet<Configuration> retConfigurations = new HashSet<Configuration>();
 				conf.doReticulations(retConfigurations);
 				for (Configuration retConf : retConfigurations) {
 					retConf.doCoalescences(nextLevel);
 				}
 			}
-			allConfigurations.add(nextLevel);
+			allConfigurations = nextLevel;
 		}
 	}
 
@@ -68,10 +68,10 @@ public class ConfigurationSearch {
 			}
 		}
 	}
-	
-	public void recoverAnswer(Configuration conf, HybridizationNetwork hn) {
+
+	private void recoverAnswer(Configuration conf, HybridizationNetwork hn) {
 		if (conf.getLastEvent() instanceof ReticulationEvent) {
-			ReticulationEvent event = (ReticulationEvent)conf.getLastEvent();
+			ReticulationEvent event = (ReticulationEvent) conf.getLastEvent();
 			Node n = new Node(hn);
 			hn.addNode(n);
 			Node ret = new Node(hn);
@@ -79,24 +79,30 @@ public class ConfigurationSearch {
 			try {
 				Taxon t = event.getLineageSource().getTaxon();
 				n.setTaxon(t);
-			} catch (IllegalArgumentException exc) {};
+			} catch (IllegalArgumentException exc) {
+			}
+			;
 			hn.addEdge(map.get(event.getLineageTarget1()), ret);
 			hn.addEdge(map.get(event.getLineageTarget2()), ret);
 			hn.addEdge(ret, n);
 			map.put(event.getLineageSource(), n);
 			recoverAnswer(event.configurationSource, hn);
 		} else if (conf.getLastEvent() instanceof CoalescenceEvent) {
-			CoalescenceEvent event = (CoalescenceEvent)conf.getLastEvent();
+			CoalescenceEvent event = (CoalescenceEvent) conf.getLastEvent();
 			Node n1 = new Node(hn);
 			Node n2 = new Node(hn);
 			try {
 				Taxon t = event.getLineageSource1().getTaxon();
 				n1.setTaxon(t);
-			} catch (IllegalArgumentException exc) {};
+			} catch (IllegalArgumentException exc) {
+			}
+			;
 			try {
 				Taxon t = event.getLineageSource2().getTaxon();
 				n2.setTaxon(t);
-			} catch (IllegalArgumentException exc) {};
+			} catch (IllegalArgumentException exc) {
+			}
+			;
 			hn.addNode(n1);
 			hn.addNode(n2);
 			hn.addEdge(map.get(event.getLineageTarget()), n1);
@@ -110,15 +116,15 @@ public class ConfigurationSearch {
 			recoverAnswer(event.configurationSource, hn);
 		}
 	}
-	
+
 	public Iterable<HybridizationNetwork> getNetworks() {
 		return networks;
 	}
-	
+
 	public int getReticulationNumber() {
 		return reticulationNumber;
 	}
-	
+
 	public int getNetworkNumber() {
 		return networks.size();
 	}

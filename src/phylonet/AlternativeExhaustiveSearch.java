@@ -12,108 +12,115 @@ import util.PhyloTree;
 import util.TaxaEmbeddingDFS;
 import util.Taxon;
 
-public class ExhaustiveSearch {
+public class AlternativeExhaustiveSearch {
 
-	private HashSet<AgreementForest> allAgreementForests = new HashSet<AgreementForest>();
+	private Vector<Vector<PhyloTree>> allPermutations = new Vector<Vector<PhyloTree>>();
 	private Vector<HybridizationNetwork> allHNetworks = new Vector<HybridizationNetwork>();
 
-	public ExhaustiveSearch(Vector<PhyloTree> input, int reticulationNumber) {
-		SmartAAF aaf = new SmartAAF(input.get(0), input.get(1), reticulationNumber);
-		HashMap<AgreementForest, Vector<HashSet<Taxon>>> map = new HashMap<AgreementForest, Vector<HashSet<Taxon>>>();
-		HashSet<Vector<HashSet<Taxon>>> taxas1 = new HashSet<Vector<HashSet<Taxon>>>();
-		for (AgreementForest af : aaf.getAllAgreementForests()) {
-			Vector<HashSet<Taxon>> taxa = new Vector<HashSet<Taxon>>();
-			for (int k = 0; k < af.getNumberOfTrees(); k++) {
-				taxa.add(af.getTaxaOfTree(k));
-			}
-			if (!taxas1.contains(taxa)) {
-				map.put(af, taxa);
-				taxas1.add(taxa);
-				allAgreementForests.add(af);
-			}
+	private void countAllPermutations(Vector<PhyloTree> input, Vector<PhyloTree> ans) {
+		if (ans.size() == input.size()) {
+			allPermutations.add(ans);
+			return;
 		}
-		for (int i = 0; i < input.size(); i++) {
-			for (int j = i + 1; j < input.size(); j++) {
-				if (i == 0 && j == 1) {
-					continue;
-				}
-				SmartAAF aaf2 = new SmartAAF(input.get(i), input.get(j), reticulationNumber);
-				Vector<AgreementForest> toRemove = new Vector<AgreementForest>();
-				HashSet<Vector<HashSet<Taxon>>> taxas = new HashSet<Vector<HashSet<Taxon>>>();
-				for (AgreementForest af2 : aaf2.getAllAgreementForests()) {
-					Vector<HashSet<Taxon>> taxa2 = new Vector<HashSet<Taxon>>();
-					for (int k = 0; k < af2.getNumberOfTrees(); k++) {
-						taxa2.add(af2.getTaxaOfTree(k));
-					}
-					taxas.add(taxa2);
-				}
-				for (AgreementForest af : allAgreementForests) {
-					if (!taxas.contains(map.get(af))) {
-						toRemove.add(af);
-					}
-				}
-				for (AgreementForest af : toRemove) {
-					allAgreementForests.remove(af);
-				}
+		for (PhyloTree tree : input) {
+			if (!ans.contains(tree)) {
+				Vector<PhyloTree> newAns = new Vector<PhyloTree>();
+				newAns.addAll(ans);
+				newAns.add(tree);
+				countAllPermutations(input, newAns);
 			}
-		}
-		PhyloTree tree1 = input.get(0);
-		HashSet<Taxon> taxaset = new HashSet<Taxon>();
-		taxaset.addAll(tree1.getAllTaxa());
-		Vector<Taxon> taxa = new Vector<Taxon>();
-		taxa.addAll(taxaset);
-		countallHNetworks(tree1, input, taxa, reticulationNumber);
-	}
-
-	private void countallHNetworks(PhyloTree tree1, Vector<PhyloTree> input, Vector<Taxon> taxa,
-			int reticulationNumber) {
-		for (AgreementForest af : allAgreementForests) {
-			HybridizationNetwork hn = new HybridizationNetwork(tree1);
-			HashSet<Taxon> added = new HashSet<Taxon>();
-			HashSet<Taxon> allTaxa = new HashSet<Taxon>();
-			added.addAll(af.getTaxaOfTree(0));
-			allTaxa.addAll(added);
-			insertEdges(hn, tree1, 0, af, added, allTaxa, input);
 		}
 	}
 
-	private void insertEdges(HybridizationNetwork hn, PhyloTree firstTree, int edgesInserted, AgreementForest af,
-			HashSet<Taxon> added, HashSet<Taxon> allTaxa, Vector<PhyloTree> input) {
+	public AlternativeExhaustiveSearch(Vector<PhyloTree> input, int reticulationNumber) {
+		countAllPermutations(input, new Vector<PhyloTree>());
+		for (Vector<PhyloTree> permutation : allPermutations) {
+			HybridizationNetwork start = new HybridizationNetwork(permutation.get(0));
+			Vector<Vector<HybridizationNetwork>> networks = new Vector<Vector<HybridizationNetwork>>();
+			networks.add(new Vector<HybridizationNetwork>());
+			networks.get(0).add(start);
+			for (int i = 1; i < permutation.size(); i++) {
+				networks.add(new Vector<HybridizationNetwork>());
+				for (HybridizationNetwork hn : networks.get(i - 1)) {
+					hn.countDisplayedTrees();
+					for (PhyloTree displayedTree : hn.getDisplayedTrees()) {
+						displayedTree.compress();
+						SmartAAF aaf = new SmartAAF(permutation.get(i), displayedTree, 0);
+						for (int k = 1;; k++) {
+							if (((Vector<AgreementForest>) aaf.getAllAgreementForests()).size() > 0) {
+								break;
+							}
+							aaf = new SmartAAF(permutation.get(i), displayedTree, k);
+						}
+						for (AgreementForest af : aaf.getAllAgreementForests()) {
+							HashSet<Taxon> added = new HashSet<Taxon>();
+							HashSet<Taxon> allTaxa = new HashSet<Taxon>();
+							added.addAll(af.getTaxaOfTree(0));
+							allTaxa.addAll(added);
+							insertEdges(hn, permutation.get(i), 0, af, added, allTaxa, reticulationNumber,
+									networks.lastElement());
+						}
+					}
+				}
+			}
+			if (networks.lastElement().size() > 0) {
+				for (HybridizationNetwork hn : networks.lastElement()) {
+					int displayedNumber = 0;
+					hn.countDisplayedTrees();
+					for (PhyloTree tree : input) {
+						if (hn.displays(tree)) {
+							displayedNumber++;
+						}
+					}
+					if (displayedNumber == input.size()) {
+						boolean used = false;
+						IsomorphismChecker checker = new IsomorphismChecker();
+						for (HybridizationNetwork old : allHNetworks) {
+							if (checker.areNetworksIsomorphic(old, hn)) {
+								used = true;
+								break;
+							}
+						}
+						if (!used) {
+							allHNetworks.add(hn);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void insertEdges(HybridizationNetwork hn, PhyloTree secondTree, int edgesInserted, AgreementForest af,
+			HashSet<Taxon> added, HashSet<Taxon> allTaxa, int reticulationNumber, Vector<HybridizationNetwork> ans) {
+		if (hn.getReticulationNumber() > reticulationNumber) {
+			return;
+		}
 		if (edgesInserted == af.getNumberOfTrees() - 1) {
 			hn.compress();
-			hn.countDisplayedTrees();
-			int displayedNumber = 0;
-			for (PhyloTree tree : input) {
-				if (hn.displays(tree)) {
-					displayedNumber++;
+			boolean used = false;
+			IsomorphismChecker checker = new IsomorphismChecker();
+			for (HybridizationNetwork old : ans) {
+				if (checker.areNetworksIsomorphic(old, hn)) {
+					used = true;
+					break;
 				}
 			}
-			if (displayedNumber == input.size()) {
-				boolean used = false;
-				IsomorphismChecker checker = new IsomorphismChecker();
-				for (HybridizationNetwork old : allHNetworks) {
-					if (checker.areNetworksIsomorphic(old, hn)) {
-						used = true;
-						break;
-					}
-				}
-				if (!used) {
-					allHNetworks.add(hn);
-				}
+			if (!used) {
+				ans.add(hn);
 			}
 			return;
 		}
 		hn.countDisplayedTrees();
 		HashSet<Taxon> newTaxa = af.getTaxaOfTree(edgesInserted + 1);
 		allTaxa.addAll(newTaxa);
-		HashSet<Node> targets = getTargetNodes(hn, firstTree, added, newTaxa, allTaxa, input);
-		HashSet<Node> sources = getSourceNodes(hn, firstTree, added, newTaxa, allTaxa, af, edgesInserted + 1, input);
+		HashSet<Node> targets = getTargetNodes(hn, secondTree, added, newTaxa, allTaxa);
+		HashSet<Node> sources = getSourceNodes(hn, secondTree, added, newTaxa, allTaxa, af, edgesInserted + 1);
 		added.addAll(newTaxa);
 		for (Node target : targets) {
 			for (Node source : sources) {
 				if (!target.isAncestorOf(source)) {
 					HybridizationNetwork newHN = copyNetworkWithNewEdge(hn, source, target);
-					insertEdges(newHN, firstTree, edgesInserted + 1, af, added, allTaxa, input);
+					insertEdges(newHN, secondTree, edgesInserted + 1, af, added, allTaxa, reticulationNumber, ans);
 				}
 			}
 		}
@@ -121,21 +128,17 @@ public class ExhaustiveSearch {
 		allTaxa.removeAll(newTaxa);
 	}
 
-	private HashSet<Node> getTargetNodes(HybridizationNetwork hn, PhyloTree firstTree, HashSet<Taxon> added,
-			HashSet<Taxon> newTaxa, HashSet<Taxon> allTaxa, Vector<PhyloTree> input) {
+	private HashSet<Node> getTargetNodes(HybridizationNetwork hn, PhyloTree secondTree, HashSet<Taxon> added,
+			HashSet<Taxon> newTaxa, HashSet<Taxon> allTaxa) {
 		HashSet<Node> target = new HashSet<Node>();
 		Vector<Node> nodes = new Vector<Node>();
 		IsomorphismChecker checker = new IsomorphismChecker();
-		for (PhyloTree tree : input) {
-			if (tree != firstTree) {
-				TaxaEmbeddingDFS dfs = new TaxaEmbeddingDFS(newTaxa, tree);
-				PhyloTree embeddedTree = dfs.getAnswer();
-				checker.countSubtreeTaxa(embeddedTree);
-				nodes.add(embeddedTree.getRoot());
-			}
-		}
+		TaxaEmbeddingDFS dfs = new TaxaEmbeddingDFS(newTaxa, secondTree);
+		PhyloTree embeddedTree = dfs.getAnswer();
+		checker.countSubtreeTaxa(embeddedTree);
+		nodes.add(embeddedTree.getRoot());
 		for (PhyloTree tree : hn.getDisplayedTrees()) {
-			TaxaEmbeddingDFS dfs = new TaxaEmbeddingDFS(allTaxa, tree);
+			dfs = new TaxaEmbeddingDFS(allTaxa, tree);
 			PhyloTree tree2 = dfs.getAnswer();
 			checker.countSubtreeTaxa(tree2);
 			for (Node n : tree2.getNodes()) {
@@ -159,7 +162,7 @@ public class ExhaustiveSearch {
 						candidates.add(candidates.lastElement().getParent());
 					}
 					for (Node candidate : candidates) {
-						if (!candidate.hasEdgeToReticulation()) {
+						if (!hn.getOldNode(candidate).hasEdgeToReticulation()) {
 							target.add(hn.getOldNode(candidate));
 						}
 					}
@@ -169,29 +172,23 @@ public class ExhaustiveSearch {
 		return target;
 	}
 
-	private HashSet<Node> getSourceNodes(HybridizationNetwork hn, PhyloTree firstTree, HashSet<Taxon> added,
-			HashSet<Taxon> newTaxa, HashSet<Taxon> allTaxa, AgreementForest af, int currentComponent,
-			Vector<PhyloTree> input) {
+	private HashSet<Node> getSourceNodes(HybridizationNetwork hn, PhyloTree secondTree, HashSet<Taxon> added,
+			HashSet<Taxon> newTaxa, HashSet<Taxon> allTaxa, AgreementForest af, int currentComponent) {
 		HashSet<Node> source = new HashSet<Node>();
 		IsomorphismChecker checker = new IsomorphismChecker();
 		Vector<Node> siblings = new Vector<Node>();
-		for (PhyloTree tree : input) {
-			if (tree == firstTree) {
-				continue;
-			}
-			TaxaEmbeddingDFS dfs = new TaxaEmbeddingDFS(allTaxa, tree);
-			PhyloTree embeddedTree = dfs.getAnswer();
-			checker.countSubtreeTaxa(embeddedTree);
-			for (Node n : embeddedTree.getNodes()) {
-				if (checker.getSubtreeTaxa(n).equals(newTaxa)) {
-					siblings.add(n.getSibling());
-					break;
-				}
+		TaxaEmbeddingDFS dfs = new TaxaEmbeddingDFS(allTaxa, secondTree);
+		PhyloTree embeddedTree = dfs.getAnswer();
+		checker.countSubtreeTaxa(embeddedTree);
+		for (Node n : embeddedTree.getNodes()) {
+			if (checker.getSubtreeTaxa(n).equals(newTaxa)) {
+				siblings.add(n.getSibling());
+				break;
 			}
 		}
 		for (Node vSib : siblings) {
 			for (PhyloTree tree : hn.getDisplayedTrees()) {
-				TaxaEmbeddingDFS dfs = new TaxaEmbeddingDFS(added, tree);
+				dfs = new TaxaEmbeddingDFS(added, tree);
 				PhyloTree tree2 = dfs.getAnswer();
 				checker.countSubtreeTaxa(tree2);
 				checker.countSubtreeTaxa(tree);

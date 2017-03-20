@@ -3,11 +3,11 @@ package util;
 import java.util.HashSet;
 
 public class CheckTreeDFS extends DFS {
-	
+
 	private boolean isTree = true;
 	private HashSet<Node> black = new HashSet<Node>();
 	private HashSet<Node> gray = new HashSet<Node>();
-	
+
 	public CheckTreeDFS(Graph graph) {
 		for (Node n : graph.getNodes()) {
 			if (!isUsed(n)) {
@@ -15,7 +15,7 @@ public class CheckTreeDFS extends DFS {
 			}
 		}
 	}
-	
+
 	@Override
 	public void enter(Node v) {
 		gray.add(v);
@@ -31,7 +31,7 @@ public class CheckTreeDFS extends DFS {
 		gray.remove(v);
 		black.add(v);
 	}
-	
+
 	public boolean isTree() {
 		return isTree;
 	}

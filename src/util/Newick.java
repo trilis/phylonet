@@ -7,18 +7,18 @@ import phylonet.AgreementForest;
 import phylonet.NaiveAAF;
 
 public class Newick {
-	
+
 	private HashSet<Taxon> taxa = new HashSet<Taxon>();
 	private HashMap<Node, Integer> mark = new HashMap<Node, Integer>();
 	private int reticulationCount = 0;
-	
+
 	public String phyloTreeToNewick(PhyloTree tree) {
 		if (tree.getRoot().isLeaf()) {
 			return tree.getRoot().getTaxon().name + ";";
 		}
 		return nodeToNewick(tree.getRoot()) + ";";
 	}
-	
+
 	public String nodeToNewick(Node root) {
 		if (root.isLeaf()) {
 			return root.getTaxon().name;
@@ -43,7 +43,7 @@ public class Newick {
 			return res + ")";
 		}
 	}
-	
+
 	public String aafToNewick(NaiveAAF aaf) {
 		String res = "";
 		int num = 1;
@@ -53,7 +53,7 @@ public class Newick {
 		}
 		return res;
 	}
-	
+
 	public String afToNewick(AgreementForest af) {
 		String res = "";
 		for (PhyloTree tree : af.getTrees()) {
@@ -61,13 +61,13 @@ public class Newick {
 		}
 		return res;
 	}
-	
+
 	public PhyloTree newickToPhyloTree(String s) {
 		PhyloTree tree = new PhyloTree();
 		tree.setRoot(newickToNode(s.substring(0, s.length() - 1), tree));
 		return tree;
 	}
-	
+
 	public Node newickToNode(String s, PhyloTree tree) {
 		if (s.charAt(0) == '(') {
 			Node n = new Node(tree);
@@ -101,7 +101,7 @@ public class Newick {
 			return n;
 		}
 	}
-	
+
 	public String hybridizationNetworkToNewick(HybridizationNetwork hn) {
 		reticulationCount = 0;
 		mark = new HashMap<Node, Integer>();
@@ -110,7 +110,7 @@ public class Newick {
 		}
 		return nodeToNewick(hn.getRoot()) + ";";
 	}
-	
+
 	public HashSet<Taxon> getTaxa() {
 		return taxa;
 	}

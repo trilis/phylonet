@@ -32,6 +32,7 @@ public class Forest {
 		for (PhyloTree tree : old.trees) {
 			trees.add(tree);
 		}
+		labels = old.labels;
 	}
 
 	public void addTree(PhyloTree tree) {
@@ -44,43 +45,47 @@ public class Forest {
 
 	public Forest cutEdge(Edge e) {
 		PhyloTree old = (PhyloTree) e.getGraph();
-		PhyloTree oldTree = copyLabeledTree(old);
+		LabeledTreeCopy copy = new LabeledTreeCopy(old, labels);
+		PhyloTree oldTree = copy.getAnswer();
 		PhyloTree newTree = new PhyloTree();
-		newTree.setRoot(copySubTree(e.getFinish(), newTree, oldTree));
-		oldTree.compress();
-		newTree.compress();
+		newTree.setRoot(copySubTree(copy.getNewNode(e.getFinish()), newTree, oldTree, true));
+		oldTree.softCompress();
+		newTree.softCompress();
 		Forest newForest = new Forest();
 		for (PhyloTree tree : getTrees()) {
 			if (tree != old) {
 				newForest.addTree(tree);
 			}
 		}
+		newForest.labels = labels;
 		newForest.addTree(oldTree);
 		newForest.addTree(newTree);
 		return newForest;
 	}
 
-	public Node copySubTree(Node v, PhyloTree newTree, PhyloTree oldTree) {
+	private Node copySubTree(Node v, PhyloTree newTree, PhyloTree oldTree, boolean isRoot) {
 		Node nw = new Node(newTree, v);
 		newTree.addNode(nw);
-		labels.put(nw, labels.get(nw));
-		Vector<Edge> toRemove = new Vector<Edge>();
+		labels.put(nw, labels.get(v));
+		Vector<Node> toRemove = new Vector<Node>();
 		for (Edge e : v.getOutEdges()) {
-			Node u = copySubTree(e.getFinish(), newTree, oldTree);
-			toRemove.add(e);
+			Node u = copySubTree(e.getFinish(), newTree, oldTree, false);
+			toRemove.add(e.getFinish());
 			newTree.addEdge(nw, u);
 		}
-		for (Edge e : toRemove) {
-			oldTree.delEdge(e);
+		for (Node n : toRemove) {
+			oldTree.delNode(n);
 		}
-		oldTree.delNode(v);
+		if (isRoot) {
+			oldTree.delNode(v);
+		}
 		return nw;
 	}
 
 	public Node findLabel(HashSet<Taxon> label) {
 		for (PhyloTree tree : getTrees()) {
 			for (Node n : tree.getNodes()) {
-				if (labels.get(n).equals(label)) {
+				if (n.isLeaf() && labels.get(n).equals(label)) {
 					return n;
 				}
 			}
@@ -93,16 +98,22 @@ public class Forest {
 		Node node1 = newForest.findLabel(cherry.getOldLabel1());
 		Node node2 = newForest.findLabel(cherry.getOldLabel2());
 		newForest.delTree((PhyloTree) node1.getGraph());
-		PhyloTree newTree = copyLabeledTree((PhyloTree) node1.getGraph());
+		LabeledTreeCopy copy = new LabeledTreeCopy((PhyloTree) node1.getGraph(), labels);
+		PhyloTree newTree = copy.getAnswer();
 		newForest.addTree(newTree);
-		newForest.labels.put(node1.getParent(), cherry.getNewLabel());
-		newTree.delNode(node1);
-		newTree.delNode(node2);
+		newForest.labels.put(copy.getNewNode(node1.getParent()), cherry.getNewLabel());
+		newTree.delEdge(copy.getNewNode(node1).getInEdges().iterator().next());
+		newTree.delEdge(copy.getNewNode(node2).getInEdges().iterator().next());
+		newTree.delNode(copy.getNewNode(node1));
+		newTree.delNode(copy.getNewNode(node2));
 		return newForest;
 	}
 
 	public Forest recoverAnswer(HashSet<Cherry> removedCherries) {
-		Forest newForest = new Forest(this);
+		Forest newForest = new Forest();
+		for (PhyloTree tree : getTrees()) {
+			newForest.addTree(new LabeledTreeCopy(tree, labels).getAnswer());
+		}
 		HashMap<HashSet<Taxon>, Cherry> map = new HashMap<HashSet<Taxon>, Cherry>();
 		for (Cherry cherry : removedCherries) {
 			map.put(cherry.getNewLabel(), cherry);
@@ -111,45 +122,31 @@ public class Forest {
 			while (true) {
 				HashMap<Node, Node> toAdd = new HashMap<Node, Node>();
 				for (Node n : tree.getNodes()) {
-					if (map.containsKey(labels.get(n))) {
+					if (n.isLeaf() && map.containsKey(labels.get(n))) {
 						Node nw1 = new Node(tree);
 						Node nw2 = new Node(tree);
 						labels.put(nw1, map.get(labels.get(n)).getOldLabel1());
+						if (map.get(labels.get(n)).getOldLabel1().size() == 1) {
+							nw1.setTaxon(map.get(labels.get(n)).getOldLabel1().iterator().next());
+						}
 						labels.put(nw2, map.get(labels.get(n)).getOldLabel2());
-						toAdd.put(n, nw1);
-						toAdd.put(n, nw2);
+						if (map.get(labels.get(n)).getOldLabel2().size() == 1) {
+							nw2.setTaxon(map.get(labels.get(n)).getOldLabel2().iterator().next());
+						}
+						toAdd.put(nw1, n);
+						toAdd.put(nw2, n);
 					}
 				}
 				if (toAdd.size() == 0) {
 					break;
 				}
 				for (Node n : toAdd.keySet()) {
-					tree.addNode(toAdd.get(n));
-					tree.addEdge(n, toAdd.get(n));
+					tree.addNode(n);
+					tree.addEdge(toAdd.get(n), n);
 				}
 			}
 		}
 		return newForest;
-	}
-
-	private PhyloTree copyLabeledTree(PhyloTree old) {
-		HashMap<Node, Node> nwnodes = new HashMap<Node, Node>();
-		PhyloTree newTree = new PhyloTree();
-		for (Node n : old.getNodes()) {
-			Node nw = new Node(newTree, n);
-			if (n == old.getRoot()) {
-				newTree.setRoot(nw);
-			}
-			nwnodes.put(n, nw);
-			newTree.addNode(nw);
-			labels.put(nw, labels.get(n));
-		}
-		for (Node n : old.getNodes()) {
-			for (Edge edg : n.getOutEdges()) {
-				newTree.addEdge(nwnodes.get(n), nwnodes.get(edg.getFinish()));
-			}
-		}
-		return newTree;
 	}
 
 	public Iterable<PhyloTree> getTrees() {
@@ -163,6 +160,5 @@ public class Forest {
 	public HashSet<Taxon> getTaxaOfTree(int treeNumber) {
 		return trees.get(treeNumber).getAllTaxa();
 	}
-	
 
 }

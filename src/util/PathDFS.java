@@ -7,11 +7,12 @@ public class PathDFS extends DFS {
 
 	private HashSet<Node> ans = new HashSet<Node>();
 	private HashMap<Node, Integer> depth = new HashMap<Node, Integer>();
-	
+
 	public PathDFS(Node start, Node finish) {
 		ans.add(start);
 		ans.add(finish);
-		dfs(((PhyloTree)start.getGraph()).getRoot());
+		depth.put(((PhyloTree) start.getGraph()).getRoot(), 0);
+		dfs(((PhyloTree) start.getGraph()).getRoot());
 		while (depth.get(start) > depth.get(finish)) {
 			start = start.getParent();
 			ans.add(start);
@@ -27,7 +28,7 @@ public class PathDFS extends DFS {
 			ans.add(finish);
 		}
 	}
-	
+
 	@Override
 	public void enter(Node v) {
 		for (Edge e : v.getOutEdges()) {
@@ -41,7 +42,7 @@ public class PathDFS extends DFS {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	public HashSet<Node> getAns() {
 		return ans;
 	}

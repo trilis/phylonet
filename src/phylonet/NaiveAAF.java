@@ -33,7 +33,9 @@ public class NaiveAAF {
 			if (set.size() == parts) {
 				try {
 					allAgreementForests.add(new AgreementForest(tree1, tree2, vec));
-				} catch (IllegalArgumentException exc) {};
+				} catch (IllegalArgumentException exc) {
+				}
+				;
 			}
 			return;
 		}
@@ -46,5 +48,5 @@ public class NaiveAAF {
 	public Iterable<AgreementForest> getAllAgreementForests() {
 		return allAgreementForests;
 	}
-	
+
 }

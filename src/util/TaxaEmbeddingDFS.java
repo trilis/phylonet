@@ -10,7 +10,7 @@ public class TaxaEmbeddingDFS extends DFS {
 	private HashMap<Node, Node> oldNodes = new HashMap<Node, Node>();
 	private PhyloTree ans = new PhyloTree();
 	private boolean flag = false;
-	
+
 	public TaxaEmbeddingDFS(HashSet<Taxon> taxa, PhyloTree tree) {
 		for (Node n : tree.getNodes()) {
 			if (n.isLeaf() && taxa.contains(n.getTaxon())) {
@@ -29,7 +29,7 @@ public class TaxaEmbeddingDFS extends DFS {
 		}
 		dfs(tree.getRoot());
 	}
-	
+
 	@Override
 	public void enter(Node v) {
 		if (!flag) {
@@ -61,7 +61,7 @@ public class TaxaEmbeddingDFS extends DFS {
 			break;
 		}
 	}
-	
+
 	public PhyloTree getAnswer() {
 		ans.compress();
 		return ans;
@@ -69,5 +69,9 @@ public class TaxaEmbeddingDFS extends DFS {
 
 	public Node getOldNode(Node v) {
 		return oldNodes.get(v);
+	}
+
+	public Node getOldRoot() {
+		return oldNodes.get(ans.getRoot());
 	}
 }

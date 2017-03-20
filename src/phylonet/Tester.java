@@ -14,9 +14,11 @@ public class Tester {
 		Scanner in = new Scanner(System.in);
 		int n = in.nextInt();
 		Newick newick = new Newick();
+		Taxon rho = new Taxon("#");
 		Vector<PhyloTree> input = new Vector<PhyloTree>();
 		for (int i = 0; i < n; i++) {
 			input.add(newick.newickToPhyloTree(in.next()));
+			input.lastElement().addFakeTaxon(rho);
 		}
 		long t0 = System.currentTimeMillis();
 		Vector<Taxon> taxa = new Vector<Taxon>();
@@ -30,6 +32,7 @@ public class Tester {
 				System.out.println("FOUND " + search.getNetworkNumber() + " NETWORK"
 						+ (search.getNetworkNumber() == 1 ? "" : "S") + " WITH RETICULATION NUMBER " + i);
 				for (HybridizationNetwork network : search.getAllHNetworks()) {
+					network.killFakeTaxon(rho);
 					System.out.println(newick.hybridizationNetworkToNewick(network));
 				}
 				break;

@@ -14,19 +14,19 @@ public class Lineage {
 	private boolean isVanishable = false;
 	private boolean isInitial = false;
 	private HashSet<ReticulationEvent> reticulationEvents = new HashSet<ReticulationEvent>();
-	Vector<PhyloTree> input;
-	
+	private Vector<PhyloTree> input;
+
 	public Lineage(Lineage lin) {
 		input = lin.input;
 	}
-	
+
 	public Lineage(Taxon t, Vector<PhyloTree> input) {
 		taxa.add(t);
 		this.input = input;
 		this.isInitial = true;
 	}
 
-	public void addNodesFromLineage(Lineage lin) {
+	private void addNodesFromLineage(Lineage lin) {
 		for (Node n : lin.nodes) {
 			this.nodes.add(n);
 		}
@@ -47,8 +47,8 @@ public class Lineage {
 		vec.add(newLin2);
 		return vec;
 	}
-	
-	public Node getParentForCoalescence(Node n, Lineage lin) {
+
+	private Node getParentForCoalescence(Node n, Lineage lin) {
 		if (n.getInDeg() != 0) {
 			Node parent = n.getParent();
 			for (Edge e : parent.getOutEdges()) {
@@ -72,13 +72,17 @@ public class Lineage {
 		for (Node n : this.nodes) {
 			try {
 				newlin.nodes.add(getParentForCoalescence(n, lin));
-			} catch (IllegalArgumentException exc) {};
+			} catch (IllegalArgumentException exc) {
+			}
+			;
 		}
 		for (Taxon t : this.taxa) {
 			for (PhyloTree tree : input) {
 				try {
 					newlin.nodes.add(getParentForCoalescence(tree.getNode(t), lin));
-				} catch (IllegalArgumentException exc) {};
+				} catch (IllegalArgumentException exc) {
+				}
+				;
 			}
 		}
 		if (newlin.nodes.size() == 0) {
@@ -108,11 +112,6 @@ public class Lineage {
 		return taxa.contains(t);
 	}
 
-	public boolean sharesReticulation(Lineage lin) {
-		//TODO
-		return false;
-	}
-	
 	public Taxon getTaxon() {
 		if (!isInitial) {
 			throw new IllegalArgumentException();
@@ -122,7 +121,7 @@ public class Lineage {
 		}
 		throw new IllegalArgumentException();
 	}
-	
+
 	@Override
 	public String toString() {
 		String res = "Nodes:";
