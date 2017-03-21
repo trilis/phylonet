@@ -12,7 +12,9 @@ public class Tester {
 
 	public static void main(String[] args) {
 		Scanner in = new Scanner(System.in);
+		System.out.println("ENTER NUMBER OF TREES");
 		int n = in.nextInt();
+		System.out.println("ENTER ONE TREE IN NEWICK FORMAT ON EACH LINE");
 		Newick newick = new Newick();
 		Taxon rho = new Taxon("#");
 		Vector<PhyloTree> input = new Vector<PhyloTree>();
